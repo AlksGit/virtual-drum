@@ -64,12 +64,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-014 | host : parseur protocole + source de données abstraite
-  > Parseur des trames USB CDC et des paquets HIT / ORIENT / STATUS de protocol.h
-  > (resync 0xA5 0x5A, vérif crc8). Interface « source » unique, deux implémentations :
-  > port série et fausses données. Tests unitaires du parseur.
-  > Blocked by: TASK-013 (projet host)
-
 - [ ] TASK-015 | host : générateur de fausses données réalistes
   > Deux baguettes, ORIENT ~100 Hz, coups HIT à vélocité variée sur plusieurs zones,
   > pattern rythmique (groove, tempo réglable). Produit des trames binaires au vrai
@@ -101,16 +95,17 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-022 | CI GitHub Actions : build host Windows + macOS
-  > Workflow déclenché sur push et pull request : configure + build Release de host/ sur
-  > windows-latest et macos-latest. Cache des sources JUCE. Badge ou statut visible.
-  > Les jobs Python (pytest) et firmware (NCS) s'ajouteront avec leurs tâches.
-  > Branch: feat/task-022-ci-host
-  > Blocked by: —
-
+- [ ] TASK-014 | host : parseur protocole + source de données abstraite
+  > Parseur des trames USB CDC et des paquets HIT / ORIENT / STATUS de protocol.h
+  > (resync 0xA5 0x5A, vérif crc8). Interface « source » unique, deux implémentations :
+  > port série et fausses données. Tests unitaires du parseur.
+  > Branch: feat/task-014-protocol-parser
+  > Blocked by: TASK-013 (projet host)
 ## ON HOLD
 
 ## DONE
+- [x] TASK-022 | CI GitHub Actions : build host Windows + macOS
+  > Merged in: devape (2026-10-29). CI verte Windows + macOS.
 - [x] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)
   > Merged in: devape (2026-10-29)
 - [x] TASK-021 | host : README, avertissement chemins longs Windows
