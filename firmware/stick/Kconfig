@@ -1,0 +1,18 @@
+# Virtual Drum stick options.
+
+config VDRUM_STICK_ID
+	int "Stick id (0 = left, 1 = right)"
+	range 0 1
+	default 0
+	help
+	  Written in every packet header and selects the ESB pipe. Build the right stick with
+	  -DCONFIG_VDRUM_STICK_ID=1.
+
+# ST's LSM6DS3TR-C driver from hal_st (hidden symbols, selected here).
+config VDRUM_STICK_IMU_DRIVER
+	bool
+	default y
+	select HAS_STMEMSC
+	select USE_STDC_LSM6DS3TR_C
+
+source "Kconfig.zephyr"
