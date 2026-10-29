@@ -72,6 +72,15 @@ On Windows, install a virtual MIDI cable such as loopMIDI and select it in the a
 ("Microsoft GS Wavetable Synth" also works, with Windows' built-in drum sounds). Press M to mute
 the app's own sounds.
 
+**Free sampled kits**: `python tools/fetch_kits.py` downloads two CC0 (public domain) acoustic
+kits by Karoryfer Samples, Swirly and Big Rusty, into the kits folder (about 18 MB, 6 velocity
+layers per pad). Nothing is stored in this repository. Then "Refresh list" in the app.
+
+**Velocity layers**: a pad can have several files, softest first, `snare_v1.wav`,
+`snare_v2.wav`... The velocity picks the layer, and the recorded level of each layer carries the
+dynamics (layers of a pad are normalised together). A single file per pad follows the gain
+curve of the built-in kits.
+
 **Your own samples**: choose "Open kits folder..." in the kit list (it creates
 `Documents/Virtual Drum/Kits`). Make one folder per kit, with one WAV, AIFF or FLAC file per pad
 named `hihat`, `snare`, `hightom`, `midtom`, `floortom`, `crash`, `ride` (aliases such as `hh`,

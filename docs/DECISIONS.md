@@ -63,3 +63,8 @@ Format : date — décision — pourquoi — alternatives écartées.
   son des autres applications. **ASIO en option de build** (`VDRUM_ASIO_SDK_DIR`) : le SDK
   Steinberg n'est ni téléchargé ni commité, sa licence doit être acceptée par l'utilisateur.
   Écarté : ASIO obligatoire (dépendance propriétaire pour tout le monde).
+- **2026-10** — Samples acoustiques : kits **CC0** de Karoryfer (Swirly, Big Rusty) **téléchargés
+  par un script** (`tools/fetch_kits.py`, commits figés), jamais commités ; **couches de vélocité**
+  dans le sampler (`<pad>_v<N>`, normalisées ensemble pour garder la dynamique enregistrée).
+  — Repo public : CC0 évite toute obligation d'attribution ou de partage ; le script garde le
+  repo léger. Écartés : Salamander (CC-BY-SA, archive de 387 Mo), samples commités dans le repo.
