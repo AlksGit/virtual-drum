@@ -74,5 +74,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   pertes ou erreur I2C. À confirmer avec le lien radio (TASK-007) et `vdrum_monitor` : ~1666
   échantillons/s, ordre gyro/accéléro correct (accéléro ≈ 1 g au repos), pas de valeurs aberrantes
   (sinon la lecture FIFO multi-octets ne reboucle pas : passer à des lectures de 2 octets).
+- **Récepteur (TASK-008)** : un seul port série doit apparaître (VID/PID 2FE3:0100, « Virtual Drum
+  Receiver ») ; LED verte qui clignote lentement sans baguette, plus vite avec trafic, rouge si des
+  trames sont jetées. Mesurer avec les deux baguettes en RAW que la LED rouge reste éteinte
+  (sinon le débit USB, ~47 ko/s, est trop juste : piste `CONFIG_USBD_CDC_ACM_BUF_POOL`).
 - **Logger Python (TASK-009)** : `python tools/logger.py --duration 30 --save-raw` avec le récepteur
   branché : CSV créés dans `recordings/`, ~1666 échantillons/s par baguette, pertes et crc affichés.

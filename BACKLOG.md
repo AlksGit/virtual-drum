@@ -22,13 +22,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Branch: feat/task-007-esb-raw
   > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
 
-- [ ] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
-  > Trame `0xA5 0x5A | len | rx_time_us | rssi | payload | crc8` conforme à
-  > docs/PROTOCOL.md, visible sur un terminal série. Peut avancer avec paquets factices.
-  > Hardware requis pour : validation USB.
-  > Branch: feat/task-008-receiver-relay
-  > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
-
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
@@ -39,6 +32,10 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
+  > Merged in: devape (2026-10-29). ESB PRX 2 canaux → trames USB CDC (crc8, horodatage, RSSI dBm),
+  > un seul port, tampon qui jette des trames entières. Review indépendante traitée.
+  > **Non validé sur cible** ; débit USB à mesurer avec les deux baguettes (QUESTIONS.md).
 - [x] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
   > Merged in: devape (2026-10-29). Code + build OK (CI), **non validé sur cible** : débit réel,
   > ordre gyro/accel détecté, lecture FIFO multi-octets à confirmer (QUESTIONS.md).
