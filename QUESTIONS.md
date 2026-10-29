@@ -68,6 +68,11 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 - **Kits de sons (TASK-024)** : écouter Studio, Rock, Jazz, Électro 808 (liste en haut à droite
   ou touche K). Pour de vrais sons : « Open kits folder... », un dossier par kit avec
   `snare.wav`, `hihat.wav`, etc., puis « Refresh list ».
+- **Kits samplés (TASK-025)** : lance `python tools/fetch_kits.py` (déjà fait sur ce PC), puis
+  choisis « Swirly » ou « Big Rusty » dans la liste des kits. Dis-moi lequel te plaît, et si les
+  nuances douces/fortes te conviennent (on peut garder plus ou moins de couches : `--layers`).
+- **Latence (TASK-028)** : liste « Audio » sous MIDI. Mode exclusif ≈ 9 ms mais coupe le son des
+  autres applis. Pour ASIO, il faut télécharger toi-même le SDK Steinberg (licence à accepter).
 - **MIDI (TASK-027)** : dans l'app, liste « MIDI out » (sous les kits). Pour tes sons dans un DAW
   sous Windows : installer loopMIDI, créer un port, le choisir dans l'app et comme entrée MIDI du
   DAW (piste batterie GM, canal 10). Test immédiat sans DAW : « Microsoft GS Wavetable Synth ».

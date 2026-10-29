@@ -15,22 +15,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
-- [ ] TASK-025 | tools : téléchargement de kits de samples libres
-  > Script qui télécharge 2-3 kits acoustiques libres (CC0 de préférence, sinon CC-BY) dans
-  > le dossier de kits de l'utilisateur, renomme les fichiers par pad, affiche la licence et
-  > l'attribution. Rien n'est commité dans le repo public. Testé (mapping, idempotence).
-  > Demandé par l'utilisateur le 2026-10-29.
-  > + couches de vélocité dans l'app (un sample par niveau de frappe).
-  > Branch: feat/task-025-free-sample-kits
-  > Blocked by: — (TASK-024 fait)
-
-- [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
-  > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
-  > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
-  > acter). Latence affichée. Mesurer ce qu'on obtient sur le PC.
-  > Branch: feat/task-028-audio-latency
-  > Blocked by: —
-
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
   > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
@@ -40,6 +24,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-025 | tools : téléchargement de kits de samples libres
+  > Merged in: devape (2026-10-29). `tools/fetch_kits.py` : Swirly et Big Rusty (Karoryfer, CC0),
+  > 6 couches de vélocité par pad, rien de commité. Sampler multi-couches. Chargement vérifié dans l'app.
+- [x] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
+  > Merged in: devape (2026-10-29). Liste « Audio » dans l'app (partagé, basse latence, exclusif,
+  > ASIO si compilé avec le SDK Steinberg). Mesuré sur le PC : 480 éch. (~20 ms) en partagé, 144 éch.
+  > (~9 ms) en exclusif.
 - [x] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
   > Merged in: devape (2026-10-29). Simulation réaliste : rappel ~99 %, précision ~98,5 %,
   > corrélation de vélocité 0,995, déclenchement ~8 ms avant l'arrêt. Seuil 260 dps (compromis
