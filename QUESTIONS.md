@@ -43,6 +43,11 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   — Défaut : build via `subst V:` (documenté dans `firmware/README.md`). — Plus simple à terme :
   déplacer le repo dans un chemin sans espace (ex. `C:/dev/virtual-drum`) ; ton choix.
 
+- **Branche distante polluée (erreur de ma part)** : `feat/task-007-esb-raw` contient par erreur
+  46 Mo de fichiers de build (commit 788a103). Elle n'a **pas** été mergée ; le travail propre est
+  sur `feat/task-007-esb-raw-v2`. Je n'ai pas le droit de supprimer de branche : si tu es d'accord,
+  `git push origin --delete feat/task-007-esb-raw` puis `git branch -D feat/task-007-esb-raw`.
+
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
 - TASK-023 : modèles procéduraux détaillés du kit.

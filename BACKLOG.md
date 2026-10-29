@@ -19,7 +19,7 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Le récepteur reçoit les paquets RAW des deux baguettes (pipes distincts) ;
   > `seq` permet de compter les pertes.
   > Hardware requis pour : validation radio.
-  > Branch: feat/task-007-esb-raw
+  > Branch: feat/task-007-esb-raw-v2
   > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
 
 ## ON HOLD
