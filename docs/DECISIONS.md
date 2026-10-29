@@ -25,3 +25,12 @@ Format : date — décision — pourquoi — alternatives écartées.
   PC et Mac, pas d'étape `git submodule`. 4.1 Core est le maximum supporté par macOS.
   Écartés : sous-module git (étape manuelle de plus, facile à désynchroniser) ; Projucer (projets
   générés par OS, moins adapté au multi-machine).
+- **2026-10** — App host démarrée dès la phase 0, sur fausses données, avant l'arrivée du hardware.
+  — Le matériel n'est pas encore livré ; la vue 3D, le parseur et le sampler peuvent avancer
+  sans lui. On écrit directement l'app JUCE cible (pas de prototype jetable) ; les fausses données
+  passent par le vrai format de trame et le vrai parseur.
+- **2026-10** — Rendu 3D **tout natif** (OpenGL dans JUCE). — Une seule techno, pas de pont
+  C++ ↔ JavaScript ; un rendu stylé (PBR, bloom, animations) reste atteignable en OpenGL 4.1.
+  Risque connu : OpenGL est déprécié sur macOS (gelé en 4.1 mais fonctionnel) ; si Apple le
+  retire, porter le rendu vers Metal ou passer par une couche de traduction.
+  Écarté : UI hybride (WebView JUCE + three.js), plus rapide pour le visuel mais deux langages.
