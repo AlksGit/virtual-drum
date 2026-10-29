@@ -1,4 +1,4 @@
-# Protocol — version 2 (brouillon, phase 0)
+# Protocol — version 3 (brouillon, phase 0)
 
 Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ parseur Python
 (`tools/`), et incrément de `PROTO_VERSION`.
@@ -6,7 +6,7 @@ Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ p
 Tous les champs en **little-endian**, structures **packées**.
 
 ## Radio ESB (baguette → récepteur)
-Payload max ESB : 32 octets (statique) ; on vise des paquets ≤ 32 octets.
+Payload ESB **dynamique** (DPL), jusqu'à 105 octets (`RADIO_MAX_PAYLOAD`) ; `CONFIG_ESB_MAX_PAYLOAD_LENGTH` doit être ≥ 105 (max ESB : 252).
 
 En-tête commun (4 octets) :
 | Champ | Type | Description |
@@ -16,16 +16,16 @@ En-tête commun (4 octets) :
 | `seq` | u16 | compteur par baguette (détection de pertes) |
 
 ### 0x01 RAW (phase 0)
-Plusieurs échantillons par paquet pour tenir le débit à 1 kHz+.
+Plusieurs échantillons par paquet pour tenir le débit à 1 kHz+ (cf. DECISIONS.md).
 | Champ | Type |
 |---|---|
 | `t0_us` | u32 — timestamp du 1er échantillon (horloge baguette) |
-| `n` | u8 — nombre d'échantillons (ex. 1–2) |
+| `n` | u8 — nombre d'échantillons, 1..8 (`RAW_MAX_SAMPLES`) |
 | `samples[n]` | {ax, ay, az, gx, gy, gz} en i16 brut capteur (12 octets) |
 
-→ 4 + 4 + 1 + 2×12 = 33 octets : **trop gros pour 2 échantillons**. À trancher en phase 0 :
-payload dynamique (ESB DPL, jusqu'à 252 octets sur nRF52840 selon config) ou 1 échantillon/paquet.
-Décision à consigner dans DECISIONS.md.
+Taille : 9 + 12·n octets (`PKT_RAW_SIZE(n)`), soit 105 octets pour 8 échantillons. Les
+échantillons sont consécutifs à l'ODR de l'IMU : l'échantillon i est à `t0_us + i / ODR`.
+Le paquet n'est pas forcément plein (dernier paquet d'une rafale FIFO, par exemple).
 
 ### 0x02 HIT
 | Champ | Type |
@@ -71,6 +71,7 @@ A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
 ```
 
 ## Historique
+- v3 (2026-10) : RAW jusqu'à 8 échantillons par paquet, payload ESB dynamique (105 o max).
 - v2 (2026-10) : convention de repère des quaternions (baguette → monde, axes du monde).
 - v1 (2026-10) : définition du crc8 et de sa couverture, ordre w, x, y, z des quaternions,
   identifiants USB. `protocol.h` compilable sous MSVC.

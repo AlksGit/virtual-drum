@@ -133,7 +133,7 @@ VDRUM_TEST (everyPacketTypeRoundTrips)
     }
 
     const auto rawBytes = encodePacket (raw);
-    CHECK (rawBytes.size() == sizeof (pkt_raw));
+    CHECK (rawBytes.size() == PKT_RAW_SIZE (1));
     const auto decodedRaw = std::get<RawPacket> (*decodePacket (rawBytes.data(), rawBytes.size()));
     CHECK (decodedRaw.samples[0].ax == -16000);
     CHECK (decodedRaw.samples[0].gx == 32767);
@@ -148,6 +148,9 @@ VDRUM_TEST (encodedSizesMatchTheCStructs)
 
     RawPacket raw;
     raw.count = 1;
+    CHECK (encodePacket (raw).size() == PKT_RAW_SIZE (1));
+
+    raw.count = RAW_MAX_SAMPLES;
     CHECK (encodePacket (raw).size() == sizeof (pkt_raw));
 }
 
@@ -270,4 +273,48 @@ VDRUM_TEST (rawPacketWithInvalidCountStillEncodesADecodableFrame)
     const auto decoded = decodePacket (bytes.data(), bytes.size());
     REQUIRE (decoded.has_value());
     CHECK (std::get<RawPacket> (*decoded).count == 1);
+}
+
+VDRUM_TEST (fullRawPacketRoundTripsThroughAFrame)
+{
+    RawPacket raw;
+    raw.header.stickId = 1;
+    raw.header.seq = 500;
+    raw.t0Us = 77;
+    raw.count = RAW_MAX_SAMPLES;
+    for (std::size_t i = 0; i < raw.samples.size(); ++i)
+        raw.samples[i] = { static_cast<std::int16_t> (i), static_cast<std::int16_t> (-1 - static_cast<int> (i)), 0,
+                           static_cast<std::int16_t> (100 * i), 0, static_cast<std::int16_t> (-32768 + static_cast<int> (i)) };
+
+    Frame frame;
+    frame.packet = raw;
+    const auto bytes = encodeFrame (frame);
+    CHECK (bytes.size() == USB_FRAME_OVERHEAD + RADIO_MAX_PAYLOAD);
+
+    FrameParser parser;
+    const auto frames = parseAll (parser, bytes);
+    REQUIRE (frames.size() == 1);
+    const auto& decoded = std::get<RawPacket> (frames.front().packet);
+    REQUIRE (decoded.count == RAW_MAX_SAMPLES);
+    for (std::size_t i = 0; i < raw.samples.size(); ++i)
+    {
+        CHECK (decoded.samples[i].ax == raw.samples[i].ax);
+        CHECK (decoded.samples[i].ay == raw.samples[i].ay);
+        CHECK (decoded.samples[i].gx == raw.samples[i].gx);
+        CHECK (decoded.samples[i].gz == raw.samples[i].gz);
+    }
+}
+
+VDRUM_TEST (partialRawPacketsAreAccepted)
+{
+    for (std::uint8_t count = 1; count <= RAW_MAX_SAMPLES; ++count)
+    {
+        RawPacket raw;
+        raw.count = count;
+        const auto bytes = encodePacket (raw);
+        CHECK (bytes.size() == PKT_RAW_SIZE (count));
+        const auto decoded = decodePacket (bytes.data(), bytes.size());
+        REQUIRE (decoded.has_value());
+        CHECK (std::get<RawPacket> (*decoded).count == count);
+    }
 }

@@ -3,7 +3,8 @@
  * Source of truth for docs/PROTOCOL.md. Any change: bump PROTO_VERSION
  * and update the Python parser in tools/ and the host parser in host/.
  *
- * DRAFT (phase 0): RAW packet sizing still to be decided (static 32 B vs ESB DPL).
+ * DRAFT (phase 0). RAW packets batch up to RAW_MAX_SAMPLES samples and need ESB dynamic
+ * payload length (see docs/DECISIONS.md, 2026-10, RAW packet size).
  *
  * All fields are little-endian. Structures are packed; they describe the wire layout
  * but parsers should decode field by field rather than casting buffers.
@@ -13,7 +14,7 @@
 
 #include <stdint.h>
 
-#define PROTO_VERSION 2
+#define PROTO_VERSION 3
 
 /* Portable packing: GCC/Clang attribute, MSVC pragma. */
 #if defined(_MSC_VER)
@@ -52,7 +53,10 @@ struct VDRUM_PACKED imu_sample {
 	int16_t gx, gy, gz;
 };
 
-#define RAW_MAX_SAMPLES 1 /* TODO(phase0): raise if ESB dynamic payload is enabled */
+/* 8 samples = one packet every 4.8 ms per stick at 1.66 kHz, 105-byte payload.
+ * Requires ESB DPL with CONFIG_ESB_MAX_PAYLOAD_LENGTH >= RADIO_MAX_PAYLOAD. */
+#define RAW_MAX_SAMPLES 8
+#define PKT_RAW_SIZE(n) (9 + 12 * (n)) /* header + t0_us + n + samples */
 
 struct VDRUM_PACKED pkt_raw {
 	struct pkt_header hdr;
@@ -86,7 +90,11 @@ VDRUM_PACKED_END
 
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_header) == 4, "pkt_header must be 4 bytes");
 VDRUM_STATIC_ASSERT(sizeof(struct imu_sample) == 12, "imu_sample must be 12 bytes");
-VDRUM_STATIC_ASSERT(sizeof(struct pkt_raw) == 9 + 12 * RAW_MAX_SAMPLES, "pkt_raw size mismatch");
+VDRUM_STATIC_ASSERT(sizeof(struct pkt_raw) == PKT_RAW_SIZE(RAW_MAX_SAMPLES), "pkt_raw size mismatch");
+
+/* Largest radio payload: the full RAW packet. ESB supports up to 252 bytes. */
+#define RADIO_MAX_PAYLOAD PKT_RAW_SIZE(RAW_MAX_SAMPLES)
+VDRUM_STATIC_ASSERT(RADIO_MAX_PAYLOAD <= 252, "payload exceeds the ESB maximum");
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_hit) == 18, "pkt_hit must be 18 bytes");
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_orient) == 16, "pkt_orient must be 16 bytes");
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_status) == 13, "pkt_status must be 13 bytes");
