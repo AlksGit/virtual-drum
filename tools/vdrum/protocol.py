@@ -13,6 +13,16 @@ from typing import Optional, Union
 
 PROTO_VERSION = 4
 
+INT16_MIN = -32768
+INT16_MAX = 32767
+
+
+def saturated(values):
+    """True where a raw sensor value sits at the end of the int16 range: the sensor clips there
+    at its configured full scale. Works on ints and numpy arrays. The single definition used by
+    every tool (plots, detection)."""
+    return (values >= INT16_MAX) | (values <= INT16_MIN)
+
 PKT_RAW = 0x01
 PKT_HIT = 0x02
 PKT_ORIENT = 0x03

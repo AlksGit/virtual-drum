@@ -71,7 +71,10 @@ class SessionWriter:
 
         if stick in self._last_seq:
             gap = (header.seq - self._last_seq[stick] - 1) & 0xFFFF
-            self.lost[stick] = self.lost.get(stick, 0) + gap
+            # A step back (duplicate, reordered packet, stick reboot) wraps to a huge gap:
+            # not a loss. Real gaps that large would mean ~2.5 min without any packet.
+            if gap < 0x8000:
+                self.lost[stick] = self.lost.get(stick, 0) + gap
         self._last_seq[stick] = header.seq
 
         if isinstance(packet, RawPacket):

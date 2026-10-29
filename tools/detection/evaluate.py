@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import bisect
 from dataclasses import dataclass
 
 import numpy as np
@@ -49,13 +50,19 @@ class Score:
 
 
 def score(hits, detections, fakes=(), window_s: float = 0.03) -> Score:
-    """Greedy one-to-one matching of detections to hits within +-window."""
+    """Greedy one-to-one matching of detections to hits within +-window, O(n log n): only the
+    detections inside the window of each hit are looked at (both lists are time-sorted)."""
+    detections = sorted(detections, key=lambda d: d.time_s)
+    times = [d.time_s for d in detections]
+    fake_times = sorted(fakes)
     used = set()
     latencies, v_true, v_est = [], [], []
     for hit in hits:
         best, best_dt = None, window_s
-        for i, d in enumerate(detections):
-            dt = abs(d.time_s - hit.time_s)
+        lo = bisect.bisect_left(times, hit.time_s - window_s)
+        hi = bisect.bisect_right(times, hit.time_s + window_s)
+        for i in range(lo, hi):
+            dt = abs(times[i] - hit.time_s)
             if i not in used and dt <= best_dt:
                 best, best_dt = i, dt
         if best is not None:
@@ -65,7 +72,12 @@ def score(hits, detections, fakes=(), window_s: float = 0.03) -> Score:
             v_est.append(detections[best].velocity)
 
     unmatched = [d for i, d in enumerate(detections) if i not in used]
-    fake_triggers = sum(1 for d in unmatched for f in fakes if abs(d.time_s - f) < 0.08)
+
+    def near_fake(t: float) -> bool:
+        i = bisect.bisect_left(fake_times, t - 0.08)
+        return i < len(fake_times) and abs(fake_times[i] - t) < 0.08
+
+    fake_triggers = sum(1 for d in unmatched if near_fake(d.time_s))  # once per detection
     return Score(
         true_hits=len(hits), detections=len(detections), matched=len(used),
         false_positives=len(unmatched), missed=len(hits) - len(used), fake_triggers=fake_triggers,
