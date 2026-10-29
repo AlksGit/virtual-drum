@@ -1,0 +1,38 @@
+name: host
+
+on:
+  push:
+    paths:
+      - "host/**"
+      - "firmware/common/**"
+      - ".github/workflows/host.yml"
+  pull_request:
+    paths:
+      - "host/**"
+      - "firmware/common/**"
+      - ".github/workflows/host.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            generator: ""
+          - os: macos-latest
+            generator: "-G Xcode"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        working-directory: host
+        run: cmake -S . -B build ${{ matrix.generator }}
+
+      - name: Build
+        working-directory: host
+        run: cmake --build build --config Release --parallel
