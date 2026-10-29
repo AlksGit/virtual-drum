@@ -4,22 +4,12 @@ Note : hardware pas encore disponible (2026-10-29). Le code peut avancer, mais t
 validation "sur cible" (flash, mesures) attend le matériel.
 
 ## TODO
-- [ ] TASK-002 | Setup toolchain NCS + west, version figée
-  > NCS installé ; `west boards | grep xiao` donne les noms exacts des deux boards ;
-  > version `vX.Y.Z` renseignée dans CLAUDE.md et actée dans docs/DECISIONS.md.
-  > Blocked by: —
-
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
   > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
   > vérifié et noté dans docs/HARDWARE.md).
   > Hardware requis pour : flash + LED.
   > Blocked by: TASK-002 (pas de build sans toolchain)
-
-- [ ] TASK-004 | Vérification hardware IMU (devicetree, pins, I²C, power GPIO, INT1)
-  > Cases « à vérifier » de docs/HARDWARE.md cochées avec source citée (devicetree
-  > xiao_ble, schéma Seeed, datasheet). Tâche doc, pas de code.
-  > Blocked by: TASK-002 (devicetree de la version NCS installée)
 
 - [ ] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
   > Accéléro + gyro ≥ 1 kHz, ±16 g / ±2000 dps ; débit vérifié par log RTT/UART ;
@@ -66,6 +56,12 @@ validation "sur cible" (flash, mesures) attend le matériel.
 ## ON HOLD
 
 ## DONE
+- [x] TASK-004 | Vérification hardware IMU (devicetree, pins, I²C, power GPIO, INT1)
+  > Merged in: devape (2026-10-29). IMU i2c0 @0x6A, INT1 P0.11, alim P1.08, batterie P0.31/P0.14,
+  > charge P0.13, layout UF2 : tout sourcé dans HARDWARE.md. Restent : ratio du diviseur, taille FIFO.
+- [x] TASK-002 | Setup toolchain NCS + west, version figée
+  > Merged in: devape (2026-10-29). NCS v3.4.1 installé (nrfutil), noms de cartes vérifiés,
+  > version notée dans CLAUDE.md et DECISIONS.md. Procédure Mac dans HARDWARE.md.
 - [x] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
   > Merged in: devape (2026-10-29). Ombres (projecteur), PBR GGX, laque à paillettes vernie,
   > chrome, bronze rainuré, environnement studio néon, HDR + ACES, 60 fps. Capture :

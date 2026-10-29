@@ -32,6 +32,13 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   Windows : ASIO (ASIO4ALL + SDK Steinberg à compiler dans JUCE, à acter), ou une option
   « mode exclusif » (coupe le son des autres applis). Ton choix ?
 
+- **Diviseur de tension batterie** : son ratio n'est ni dans le devicetree ni sur le wiki Seeed.
+  — Défaut : la mesure de batterie reste non implémentée. — Il faut le schéma Seeed de la XIAO
+  nRF52840 (PDF) ; si tu l'as, dépose-le dans `docs/` et je l'exploite.
+- **Datasheet LSM6DS3TR-C** : le site ST bloque le téléchargement automatique ; les sensibilités
+  et WHO_AM_I viennent du pilote officiel ST livré avec NCS. — Rien de bloqué ; la taille de FIFO
+  reste à confirmer (PDF à déposer dans `docs/` si tu veux que je la vérifie).
+
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
 - TASK-023 : modèles procéduraux détaillés du kit.
