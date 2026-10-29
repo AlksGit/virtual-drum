@@ -16,17 +16,25 @@ env:
 
 jobs:
   build:
-    name: build (${{ matrix.app }})
+    name: build (${{ matrix.name }})
     runs-on: ubuntu-latest
     container: ghcr.io/nrfconnect/sdk-nrf-toolchain:v3.4.1
     strategy:
       fail-fast: false
       matrix:
         include:
-          - app: stick
+          - name: stick-left
+            app: stick
             board: xiao_ble/nrf52840/sense
-          - app: receiver
+            extra: -DCONFIG_VDRUM_STICK_ID=0
+          - name: stick-right
+            app: stick
+            board: xiao_ble/nrf52840/sense
+            extra: -DCONFIG_VDRUM_STICK_ID=1
+          - name: receiver
+            app: receiver
             board: xiao_ble/nrf52840
+            extra: ""
 
     defaults:
       run:
@@ -57,11 +65,11 @@ jobs:
           export ZEPHYR_BASE="$GITHUB_WORKSPACE/ncs/zephyr"
           cd ncs
           west build -b "${{ matrix.board }}" "$GITHUB_WORKSPACE/project/firmware/${{ matrix.app }}" \
-            -d "$GITHUB_WORKSPACE/build/${{ matrix.app }}" -p always
+            -d "$GITHUB_WORKSPACE/build/${{ matrix.name }}" -p always -- ${{ matrix.extra }}
 
       - name: Upload UF2
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.app }}-uf2
-          path: build/${{ matrix.app }}/${{ matrix.app }}/zephyr/zephyr.uf2
+          name: ${{ matrix.name }}-uf2
+          path: build/${{ matrix.name }}/${{ matrix.app }}/zephyr/zephyr.uf2
           if-no-files-found: error
