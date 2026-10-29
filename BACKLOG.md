@@ -14,7 +14,36 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
+- [ ] TASK-025 | tools : téléchargement de kits de samples libres
+  > Script qui télécharge 2-3 kits acoustiques libres (CC0 de préférence, sinon CC-BY) dans
+  > le dossier de kits de l'utilisateur, renomme les fichiers par pad, affiche la licence et
+  > l'attribution. Rien n'est commité dans le repo public. Testé (mapping, idempotence).
+  > Demandé par l'utilisateur le 2026-10-29.
+  > Blocked by: — (TASK-024 fait)
+
+- [ ] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
+  > Simulateur d'IMU (gyro + accéléro dans le repère baguette, bruit, saturation ±2000 dps,
+  > choc à l'impact) avec vérité terrain ; détecteur (pic de vitesse angulaire + décélération,
+  > période réfractaire) et estimation de vélocité avant le pic ; métriques : faux positifs /
+  > négatifs, latence de détection, corrélation de vélocité. Tests pytest. Sert de base à la
+  > phase 1 sur données réelles.
+  > Blocked by: —
+
 ## IN PROGRESS
+- [ ] TASK-027 | host : sortie MIDI vers un DAW
+  > L'app envoie chaque coup en note MIDI (General MIDI batterie : caisse claire 38, charleston
+  > fermée 42, toms 50/47/43, crash 49, ride 51), vélocité 1-127, sur une sortie choisie dans
+  > l'app (port virtuel créé sur Mac ; sous Windows, un port existant comme loopMIDI). Option
+  > pour couper le son interne. Choix mémorisé. Tests du mapping et des messages.
+  > Branch: feat/task-027-midi-out
+  > Blocked by: —
+
+- [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
+  > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
+  > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
+  > acter). Latence affichée. Mesurer ce qu'on obtient sur le PC.
+  > Blocked by: —
+
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;

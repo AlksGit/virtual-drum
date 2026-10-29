@@ -52,6 +52,7 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 (tâches ajoutées au backlog)
 - TASK-023 : modèles procéduraux détaillés du kit.
 - TASK-022 : CI GitHub Actions (build host Windows + macOS).
+- TASK-024 à 028 : kits de sons, samples libres, détection Python, MIDI, latence Windows (demandés).
 
 ## À tester par toi
 (son, ressenti, vérifs visuelles fines)
