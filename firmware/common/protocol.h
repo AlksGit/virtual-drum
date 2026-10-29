@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-#define PROTO_VERSION 1
+#define PROTO_VERSION 2
 
 /* Portable packing: GCC/Clang attribute, MSVC pragma. */
 #if defined(_MSC_VER)
@@ -65,7 +65,7 @@ struct VDRUM_PACKED pkt_hit {
 	struct pkt_header hdr;
 	uint32_t t_us;
 	uint8_t  velocity; /* 1..127 */
-	int16_t  quat[4];  /* w, x, y, z in Q14 (1.0 = 16384) */
+	int16_t  quat[4];  /* w, x, y, z in Q14 (1.0 = 16384), stick -> world, see PROTOCOL.md */
 	uint8_t  flags;
 };
 
