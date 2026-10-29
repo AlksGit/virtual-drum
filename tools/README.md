@@ -20,6 +20,16 @@ Writes `session_<stamp>_imu.csv` (one row per IMU sample: rx time, rssi, stick, 
 index, t_us, ax..gz) and `session_<stamp>_events.csv` (HIT, ORIENT, STATUS) in `recordings/`
 (ignored by git). Prints rates, packet losses (seq gaps) and crc errors every second.
 
+## plot_session.py — look at a session
+```
+python tools/plot_session.py recordings/session_<stamp>_imu.csv            # window
+python tools/plot_session.py recordings/session_<stamp>_imu.csv --out a.png
+```
+Accelerometer and gyroscope per stick in raw counts, with the int16 full-scale lines,
+saturated samples marked and lost packets shaded. Prints, per stick: received sample rate,
+packets lost and saturated samples. (Conversion to g and deg/s waits for the sensitivities to
+be checked in the datasheet, TASK-004.)
+
 ## vdrum/ — shared code
 - `protocol.py` — Python view of `firmware/common/protocol.h` (parser, encoder, crc8).
   The tests check its constants against the C header.
