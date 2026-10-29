@@ -1,20 +1,17 @@
 #pragma once
 
-#include "KitLayout.h"
-#include "Mesh.h"
+#include "SceneRenderer.h"
 #include "SceneState.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_opengl/juce_opengl.h>
 
-#include <array>
 #include <atomic>
-#include <memory>
 
 namespace vdrum
 {
 
-// 3D view of the kit and the two sticks, rendered with OpenGL 4.1 Core.
+// 3D view of the kit and the two sticks (OpenGL 4.1 Core, rendering in SceneRenderer).
 // Rendering runs on JUCE's OpenGL thread and never touches the component: the camera comes
 // through atomics, the viewport from JUCE, and scene data from SceneState snapshots.
 // Mouse: drag to orbit, wheel to zoom, double-click to reset the camera.
@@ -38,55 +35,19 @@ public:
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails&) override;
 
 private:
-    struct GpuMesh
-    {
-        juce::uint32 vertexArray = 0;
-        juce::uint32 vertexBuffer = 0;
-        juce::uint32 indexBuffer = 0;
-        int indexCount = 0;
-    };
-
-    struct Material
-    {
-        Vec3 baseColour;       // linear RGB
-        float specular = 0.2f;
-        float shininess = 24.0f;
-    };
-
-    struct PadMeshes
-    {
-        GpuMesh body; // drum shell or cymbal
-        GpuMesh head; // drum head + hoop (empty for cymbals)
-        GpuMesh stand;
-    };
-
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
 
-    bool buildShader();
-    GpuMesh upload (const Mesh& mesh);
-    static void release (GpuMesh& mesh);
-    void draw (const GpuMesh& mesh, const Mat4& model, const Material& material, Vec3 emissive);
     void resetCamera();
-    Vec3 cameraPosition() const;
+    CameraPose cameraPose() const;
 
     const SceneState& sceneState;
     juce::OpenGLContext glContext;
+    SceneRenderer renderer { glContext }; // GL thread only
     juce::Label overlay;
 
-    // GL thread only.
-    std::unique_ptr<juce::OpenGLShaderProgram> shader;
-    struct Uniforms
-    {
-        int model = -1, view = -1, projection = -1, normalMatrix = -1;
-        int baseColour = -1, emissive = -1, specular = -1, shininess = -1, cameraPosition = -1, fogColour = -1;
-    } uniforms;
-    std::array<PadMeshes, kDrumKit.size()> padMeshes {};
-    GpuMesh stickMesh, floorMesh;
-    bool resourcesReady = false;
-    Mat4 viewMatrix, projectionMatrix;
-    int framesInWindow = 0;
+    int framesInWindow = 0;     // GL thread only
     double fpsWindowStart = 0.0;
 
     // Written on the message thread, read on the GL thread.

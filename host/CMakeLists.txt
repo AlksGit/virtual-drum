@@ -30,7 +30,8 @@ add_library(vdrum_core STATIC
     src/core/FakeDataSource.cpp
     src/core/Mesh.cpp
     src/core/Sampler.cpp
-    src/core/DrumSynth.cpp)
+    src/core/DrumSynth.cpp
+    src/core/KitModel.cpp)
 
 if(WIN32)
     target_sources(vdrum_core PRIVATE src/core/SerialPort_windows.cpp)
@@ -65,7 +66,8 @@ add_executable(vdrum_tests
     tests/SerialTests.cpp
     tests/FakeSourceTests.cpp
     tests/SceneTests.cpp
-    tests/SamplerTests.cpp)
+    tests/SamplerTests.cpp
+    tests/KitModelTests.cpp)
 
 target_link_libraries(vdrum_tests
     PRIVATE
@@ -95,6 +97,7 @@ target_sources(VirtualDrum
         src/Main.cpp
         src/MainComponent.cpp
         src/SceneView.cpp
+        src/SceneRenderer.cpp
         src/AudioEngine.cpp)
 
 target_compile_definitions(VirtualDrum
