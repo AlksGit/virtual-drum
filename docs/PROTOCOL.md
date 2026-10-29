@@ -1,4 +1,4 @@
-# Protocol — version 0 (brouillon, phase 0)
+# Protocol — version 1 (brouillon, phase 0)
 
 Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ parseur Python
 (`tools/`), et incrément de `PROTO_VERSION`.
@@ -32,15 +32,28 @@ Décision à consigner dans DECISIONS.md.
 |---|---|
 | `t_us` | u32 — instant du coup |
 | `velocity` | u8 — 1..127 |
-| `quat` | i16×4 — orientation au coup (Q14) |
+| `quat` | i16×4 — orientation au coup, ordre w, x, y, z, Q14 (1.0 = 16384) |
 | `flags` | u8 — saturation détectée, etc. |
 
 ### 0x03 ORIENT (~100 Hz)
-`t_us` u32, `quat` i16×4 (Q14).
+`t_us` u32, `quat` i16×4 (w, x, y, z, Q14).
 
 ### 0x04 STATUS (~1 Hz)
 `vbat_mv` u16, `gyro_bias` i16×3, `fw_version` u8.
 
 ## USB CDC (récepteur → PC)
 Trame : `0xA5 0x5A | len u8 | rx_time_us u32 | rssi i8 | payload ESB (len octets) | crc8`.
-Le parseur resynchronise sur `0xA5 0x5A` en cas d'erreur.
+- `len` = longueur du payload seul. Overhead total : 9 octets.
+- `crc8` : **CRC-8/SMBUS** (poly 0x07, init 0x00, sans réflexion, sans xor final ;
+  `crc8("123456789") = 0xF4`), calculé sur `len`, `rx_time_us`, `rssi` et le payload,
+  c'est-à-dire tout ce qui est entre les octets de synchro et le crc.
+- Le parseur resynchronise sur `0xA5 0x5A` en cas d'erreur (crc faux, type inconnu, longueur
+  incohérente avec le type).
+
+Identifiants USB du récepteur (phase 0) : VID `0x2FE3` / PID `0x0100` (valeurs de dev par défaut
+de Zephyr), produit « Virtual Drum Receiver ». Les outils host détectent le port avec ces valeurs.
+
+## Historique
+- v1 (2026-10) : définition du crc8 et de sa couverture, ordre w, x, y, z des quaternions,
+  identifiants USB. `protocol.h` compilable sous MSVC.
+- v0 : brouillon initial.
