@@ -83,11 +83,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > La taille de la vue est transmise au thread GL de façon sûre (remarque review TASK-013).
   > Blocked by: TASK-015 (orientations à afficher)
 
-- [ ] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)
-  > docs/ROADMAP.md et docs/DECISIONS.md reflètent le démarrage anticipé de l'app JUCE
-  > sur fausses données, avec vue 3D.
-  > Blocked by: —
-
 - [ ] TASK-018 | host : sampler basique
   > Un sample par zone, volume selon la vélocité. Sortie CoreAudio (Mac) / ASIO (Windows),
   > buffer 64 @ 48 kHz ; sortie Windows par défaut acceptée en attendant le SDK ASIO.
@@ -106,10 +101,18 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
+- [ ] TASK-022 | CI GitHub Actions : build host Windows + macOS
+  > Workflow déclenché sur push et pull request : configure + build Release de host/ sur
+  > windows-latest et macos-latest. Cache des sources JUCE. Badge ou statut visible.
+  > Les jobs Python (pytest) et firmware (NCS) s'ajouteront avec leurs tâches.
+  > Branch: feat/task-022-ci-host
+  > Blocked by: —
 
 ## ON HOLD
 
 ## DONE
+- [x] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)
+  > Merged in: devape (2026-10-29)
 - [x] TASK-021 | host : README, avertissement chemins longs Windows
   > Merged in: devape (2026-10-29)
 - [x] TASK-013 | host : squelette app JUCE (CMake, Windows + Mac)

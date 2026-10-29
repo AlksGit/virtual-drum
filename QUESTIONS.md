@@ -18,6 +18,7 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
+- TASK-022 : CI GitHub Actions (build host Windows + macOS).
 
 ## À tester par toi
 (son, ressenti, vérifs visuelles fines)
