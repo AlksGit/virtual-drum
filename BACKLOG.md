@@ -1,0 +1,106 @@
+# Backlog
+
+Note : hardware pas encore disponible (2026-10-29). Le code peut avancer, mais toute
+validation "sur cible" (flash, mesures) attend le matériel.
+
+## TODO
+- [ ] TASK-002 | Setup toolchain NCS + west, version figée
+  > NCS installé ; `west boards | grep xiao` donne les noms exacts des deux boards ;
+  > version `vX.Y.Z` renseignée dans CLAUDE.md et actée dans docs/DECISIONS.md.
+  > Blocked by: —
+
+- [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
+  > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
+  > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
+  > vérifié et noté dans docs/HARDWARE.md).
+  > Hardware requis pour : flash + LED.
+  > Blocked by: TASK-002 (pas de build sans toolchain)
+
+- [ ] TASK-004 | Vérification hardware IMU (devicetree, pins, I²C, power GPIO, INT1)
+  > Cases « à vérifier » de docs/HARDWARE.md cochées avec source citée (devicetree
+  > xiao_ble, schéma Seeed, datasheet). Tâche doc, pas de code.
+  > Blocked by: TASK-002 (devicetree de la version NCS installée)
+
+- [ ] TASK-005 | Décision : taille des paquets RAW (ESB DPL vs 1 échantillon/paquet)
+  > Décision dans docs/DECISIONS.md ; protocol.h et docs/PROTOCOL.md mis à jour ;
+  > PROTO_VERSION incrémenté.
+  > Blocked by: —
+
+- [ ] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
+  > Accéléro + gyro ≥ 1 kHz, ±16 g / ±2000 dps ; débit vérifié par log RTT/UART ;
+  > pas d'allocation dynamique.
+  > Hardware requis pour : validation du débit.
+  > Blocked by: TASK-003 (build/flash), TASK-004 (pins et adresse I²C vérifiés)
+
+- [ ] TASK-007 | Lien ESB stick → receiver, paquets RAW, compteur seq
+  > Le récepteur reçoit les paquets RAW des deux baguettes (pipes distincts) ;
+  > `seq` permet de compter les pertes.
+  > Hardware requis pour : validation radio.
+  > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
+
+- [ ] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
+  > Trame `0xA5 0x5A | len | rx_time_us | rssi | payload | crc8` conforme à
+  > docs/PROTOCOL.md, visible sur un terminal série. Peut avancer avec paquets factices.
+  > Hardware requis pour : validation USB.
+  > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
+
+- [ ] TASK-009 | tools/logger.py : série → CSV par session
+  > Resync sur 0xA5 0x5A ; CSV : une colonne par axe + stick_id + seq + rx_time_us ;
+  > `--port` sinon auto-détection VID/PID ; pathlib ; Windows et macOS.
+  > Testable avant le firmware avec des trames factices.
+  > Blocked by: TASK-005 (format)
+
+- [ ] TASK-010 | tools/plot_session.py : courbes accel/gyro + marquage saturation
+  > Plots par axe depuis un CSV, échantillons saturés surlignés, stats de pertes.
+  > Blocked by: TASK-009 (format CSV)
+
+- [ ] TASK-011 | Validation bascule PC → Mac
+  > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
+  > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
+
+- [ ] TASK-012 | Mesures phase 0 (débit, pertes, saturation gyro, dérive lacet)
+  > Sessions des deux baguettes enregistrées ; résultats chiffrés dans docs/ ;
+  > critère de sortie de phase 0 atteint ou écarts identifiés.
+  > Hardware requis.
+  > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
+
+- [ ] TASK-014 | host : parseur protocole + source de données abstraite
+  > Parseur des trames USB CDC et des paquets HIT / ORIENT / STATUS de protocol.h
+  > (resync 0xA5 0x5A, vérif crc8). Interface « source » unique, deux implémentations :
+  > port série et fausses données. Tests unitaires du parseur.
+  > Blocked by: TASK-013 (projet host)
+
+- [ ] TASK-015 | host : générateur de fausses données réalistes
+  > Deux baguettes, ORIENT ~100 Hz, coups HIT à vélocité variée sur plusieurs zones,
+  > pattern rythmique (groove, tempo réglable). Produit des trames binaires au vrai
+  > format pour passer par le vrai parseur.
+  > Blocked by: TASK-014 (interface source + format)
+
+- [ ] TASK-016 | host : vue 3D « batterie » stylée
+  > Kit en 3D (OpenGL) : caisse claire, toms, cymbales, charleston. Pads qui s'illuminent
+  > au coup, intensité selon la vélocité, animation de décroissance. Les deux baguettes
+  > sont modélisées et suivent l'orientation reçue (quaternions). Caméra orbitale. 60 fps.
+  > Blocked by: TASK-015 (données à afficher)
+
+- [ ] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)
+  > docs/ROADMAP.md et docs/DECISIONS.md reflètent le démarrage anticipé de l'app JUCE
+  > sur fausses données, avec vue 3D.
+  > Blocked by: —
+
+- [ ] TASK-018 | host : sampler basique
+  > Un sample par zone, volume selon la vélocité. Sortie CoreAudio (Mac) / ASIO (Windows),
+  > buffer 64 @ 48 kHz ; sortie Windows par défaut acceptée en attendant le SDK ASIO.
+  > Déclenché par les HIT, fausses données comprises.
+  > Blocked by: TASK-014 (réception des HIT) ; indépendant de la vue 3D
+
+## IN PROGRESS
+
+## ON HOLD
+
+## DONE
+- [x] TASK-013 | host : squelette app JUCE (CMake, Windows + Mac)
+  > Merged in: devape (2026-10-29), branch feat/task-013-host-skeleton
+- [x] TASK-001 | Init repo (.gitignore, .gitattributes, premier commit)
+  > Merged in: main (commit d16e7ae)
+
+## CANCELLED

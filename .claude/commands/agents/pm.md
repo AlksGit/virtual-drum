@@ -76,7 +76,7 @@ When the user describes new work:
 The user decides which task to work on. When they pick one:
 1. Move it to IN PROGRESS in `BACKLOG.md`
 2. Explain clearly what needs to be done (requirements, acceptance criteria, context)
-3. Tell the user: **"Lance `/agents/dev` pour commencer cette tâche."**
+3. **Launch the Dev agent yourself**: invoke the Skill tool with `agents:dev` right away, so the user never has to type `/agents/dev`. Do not ask the user to launch it.
 
 ### 4. Update requirements
 When the user wants to change requirements for an existing task:
@@ -98,7 +98,7 @@ When the user wants to cancel a task:
 
 ### 7. Task handoff guidance
 When guiding the user between agents:
-- After PM → tell user to launch `/agents/dev`
+- After PM → launch `/agents/dev` yourself (Skill tool, `agents:dev`) as soon as a task is picked
 - After Dev reports done → tell user to launch `/agents/review`
 - After Review merges → PM marks task DONE in `BACKLOG.md`
 
