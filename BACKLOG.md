@@ -49,19 +49,20 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-023 | host : modèles procéduraux détaillés du kit
-  > Remplace les cylindres par des modèles détaillés générés en code : cercles et griffes,
-  > tirants et coquilles, peaux de frappe, pieds tripodes télescopiques, support de charleston,
-  > perches de cymbales, grosse caisse (décorative en attendant les pédales), siège, tapis.
-  > Aucun fichier externe (repo public, pas de licence à gérer). 60 fps.
-  > Blocked by: TASK-019 (les matériaux définissent l'apparence des pièces)
-
 - [ ] TASK-020 | host : bloom et animations au coup
   > Un HIT déclenche un flash avec halo (bloom) sur le pad visé, intensité selon la
   > vélocité, décroissance. Vibration des cymbales, particules optionnelles. 60 fps.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
+- [ ] TASK-023 | host : modèles procéduraux détaillés du kit
+  > Remplace les cylindres par des modèles détaillés générés en code : cercles et griffes,
+  > tirants et coquilles, peaux de frappe, pieds tripodes télescopiques, support de charleston,
+  > perches de cymbales, grosse caisse (décorative en attendant les pédales), siège, tapis.
+  > Aucun fichier externe (repo public, pas de licence à gérer). 60 fps.
+  > Branch: feat/task-023-detailed-models
+  > Blocked by: TASK-019 (les matériaux définissent l'apparence des pièces)
+
 ## ON HOLD
 
 ## DONE
