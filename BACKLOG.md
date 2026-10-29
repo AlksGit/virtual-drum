@@ -15,6 +15,17 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
+- [ ] TASK-029 | Corrections pré-hardware issues de la revue experte (firmware, host, tools)
+  > Firmware : délais de retransmission ESB valides (>= 435 µs) et écartés, fast ramp-up,
+  > FIFO IMU qui ne reste pas bloquée (relecture d'état), état FIFO en une lecture groupée,
+  > horodatage pris dans l'interruption, compteurs radio (tentatives, échecs) dans STATUS
+  > (protocole v4). Host : kit refusé gardé et réessayé, kit en attente purgé au redémarrage audio,
+  > fondu sur vol de voix + limite par pad, synthèse seulement des pads manquants. Tools : pertes
+  > correctes après rebouclage du seq et avec les paquets STATUS, matching en O(n log n), CRC par
+  > table, seuil de saturation commun, dt réel dans le détecteur.
+  > Demandé par l'utilisateur le 2026-10-29 après la revue experte.
+  > Branch: feat/task-029-pre-hardware-fixes
+  > Blocked by: —
 
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
