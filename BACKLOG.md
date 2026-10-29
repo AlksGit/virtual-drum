@@ -49,15 +49,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
-  > Shader PBR (GGX, metallic/roughness) ; éclairage studio : lumière principale avec ombres
-  > portées (shadow map, PCF), contre-jours néon cyan/magenta, environnement procédural pour
-  > les reflets (cymbales, chrome) ; rendu HDR + tone mapping filmique (ACES), MSAA.
-  > Matériaux : laque avec vernis (fûts), chrome, bronze avec rainures de tournage (cymbales),
-  > peaux sablées, bois (baguettes). Direction artistique sombre, accents néon. 60 fps.
-  > Vérification par captures avant/après.
-  > Blocked by: TASK-016 (scène à éclairer)
-
 - [ ] TASK-023 | host : modèles procéduraux détaillés du kit
   > Remplace les cylindres par des modèles détaillés générés en code : cercles et griffes,
   > tirants et coquilles, peaux de frappe, pieds tripodes télescopiques, support de charleston,
@@ -71,6 +62,16 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
+- [ ] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
+  > Shader PBR (GGX, metallic/roughness) ; éclairage studio : lumière principale avec ombres
+  > portées (shadow map, PCF), contre-jours néon cyan/magenta, environnement procédural pour
+  > les reflets (cymbales, chrome) ; rendu HDR + tone mapping filmique (ACES), MSAA.
+  > Matériaux : laque avec vernis (fûts), chrome, bronze avec rainures de tournage (cymbales),
+  > peaux sablées, bois (baguettes). Direction artistique sombre, accents néon. 60 fps.
+  > Vérification par captures avant/après.
+  > Branch: feat/task-019-pbr-lighting
+  > Blocked by: TASK-016 (scène à éclairer)
+
 ## ON HOLD
 
 ## DONE
