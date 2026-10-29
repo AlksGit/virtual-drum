@@ -103,6 +103,19 @@ target_sources(VirtualDrum
         src/KitLibrary.cpp
         src/MidiSender.cpp)
 
+# ASIO (Windows): Steinberg's SDK cannot be fetched automatically (its licence has to be
+# accepted). Download it yourself and configure with -DVDRUM_ASIO_SDK_DIR=<path to asiosdk>,
+# the folder that contains common/iasiodrv.h. See host/README.md.
+set(VDRUM_ASIO_SDK_DIR "" CACHE PATH "Steinberg ASIO SDK folder (Windows, optional)")
+if(WIN32 AND VDRUM_ASIO_SDK_DIR)
+    if(NOT EXISTS "${VDRUM_ASIO_SDK_DIR}/common/iasiodrv.h")
+        message(FATAL_ERROR "VDRUM_ASIO_SDK_DIR does not contain common/iasiodrv.h: ${VDRUM_ASIO_SDK_DIR}")
+    endif()
+    target_include_directories(VirtualDrum PRIVATE "${VDRUM_ASIO_SDK_DIR}/common")
+    target_compile_definitions(VirtualDrum PRIVATE JUCE_ASIO=1)
+    message(STATUS "ASIO support enabled with ${VDRUM_ASIO_SDK_DIR}")
+endif()
+
 target_compile_definitions(VirtualDrum
     PRIVATE
         JUCE_WEB_BROWSER=0

@@ -16,6 +16,17 @@ constexpr int kMidiRefreshId = 900;
 constexpr int kMidiFirstOutputId = 2;
 const char* const kKitSetting = "kit";
 const char* const kMidiSetting = "midiOutput";
+const char* const kAudioDriverSetting = "audioDriver";
+
+// Readable names for JUCE's driver types.
+juce::String describeDriverType (const juce::String& type)
+{
+    if (type == "Windows Audio")                    return "Audio: shared (safe)";
+    if (type == "Windows Audio (Low Latency Mode)") return "Audio: low latency";
+    if (type == "Windows Audio (Exclusive Mode)")   return "Audio: exclusive (mutes other apps)";
+    if (type == "DirectSound")                      return "Audio: DirectSound (legacy)";
+    return "Audio: " + type;
+}
 
 void styleSelector (juce::ComboBox& box)
 {
@@ -59,6 +70,11 @@ MainComponent::MainComponent (const juce::String& commandLine)
     rebuildMidiMenu();
     openMidiOutput (settings->getValue (kMidiSetting));
 
+    audioSelector.setTooltip ("Audio driver: exclusive mode or ASIO give the lowest latency");
+    styleSelector (audioSelector);
+    audioSelector.onChange = [this] { audioMenuChanged(); };
+    sceneView.addAndMakeVisible (audioSelector);
+
     setSize (1280, 720);
     setWantsKeyboardFocus (true);
 
@@ -81,8 +97,9 @@ MainComponent::MainComponent (const juce::String& commandLine)
     {
         if (safeThis == nullptr)
             return;
-        const auto error = safeThis->audio.start();
+        const auto error = safeThis->audio.start (safeThis->settings->getValue (kAudioDriverSetting));
         safeThis->audioStatus = error.isEmpty() ? safeThis->audio.describeDevice() : "Audio off: " + error;
+        safeThis->rebuildAudioMenu();
     });
 }
 
@@ -135,6 +152,32 @@ void MainComponent::resized()
     sceneView.setBounds (getLocalBounds());
     kitSelector.setBounds (sceneView.getWidth() - 12 - 240, 12, 240, 28);
     midiSelector.setBounds (kitSelector.getBounds().translated (0, 34));
+    audioSelector.setBounds (midiSelector.getBounds().translated (0, 34));
+}
+
+void MainComponent::rebuildAudioMenu()
+{
+    audioDriverTypes = audio.availableDriverTypes();
+    audioSelector.clear (juce::dontSendNotification);
+    for (int i = 0; i < audioDriverTypes.size(); ++i)
+        audioSelector.addItem (describeDriverType (audioDriverTypes[i]), i + 1);
+    audioSelector.setSelectedId (audioDriverTypes.indexOf (audio.currentDriverType()) + 1, juce::dontSendNotification);
+}
+
+void MainComponent::audioMenuChanged()
+{
+    const auto index = audioSelector.getSelectedId() - 1;
+    if (index < 0 || index >= audioDriverTypes.size())
+        return;
+
+    const auto error = audio.setDriverType (audioDriverTypes[index]);
+    audioStatus = error.isEmpty() ? audio.describeDevice() : audio.describeDevice() + "   (" + error + ")";
+    if (error.isEmpty())
+    {
+        settings->setValue (kAudioDriverSetting, audioDriverTypes[index]);
+        settings->saveIfNeeded();
+    }
+    rebuildAudioMenu();
 }
 
 void MainComponent::rebuildMidiMenu()

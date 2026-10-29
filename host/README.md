@@ -77,9 +77,17 @@ the app's own sounds.
 named `hihat`, `snare`, `hightom`, `midtom`, `floortom`, `crash`, `ride` (aliases such as `hh`,
 `tom1`, `floor` work too), then "Refresh list". Missing pads use the Studio sounds; files are
 mixed to mono, resampled and normalised. `VDRUM_KITS_DIR` overrides the folder. The app asks for 48 kHz and the smallest buffer from
-64 samples up, preferring ASIO, then "Windows Audio (Low Latency Mode)" on Windows. Many
-built-in Windows drivers do not go below 480 samples (~10 ms) in shared mode; ASIO is needed
-to reach the latency target there. CoreAudio on macOS normally accepts 64 samples.
+64 samples up. The third list at the top right picks the driver type (remembered):
+- **shared (safe)** / **low latency**: other apps keep playing; many built-in Windows drivers
+  stay at 480 samples (~20 ms here, Realtek);
+- **exclusive (mutes other apps)**: the lowest latency without extra software (144 samples,
+  ~9 ms on the same Realtek PC);
+- **ASIO** (if built with the SDK, below) and **CoreAudio** on macOS (normally 64 samples).
+
+ASIO: Steinberg's SDK is not downloaded automatically (its licence has to be accepted by you).
+Get it from steinberg.net, unzip it, then configure with
+`-DVDRUM_ASIO_SDK_DIR=<folder containing common/iasiodrv.h>`. An ASIO driver is also needed
+(your audio interface's, or ASIO4ALL).
 
 ## Tests
 Unit tests (protocol, frame parser, serial port) build with the app and run with CTest:

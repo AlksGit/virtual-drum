@@ -55,6 +55,10 @@ private:
     void midiMenuChanged();
     void openMidiOutput (const juce::String& name);
 
+    // Audio driver type (shared, low latency, exclusive, ASIO...).
+    void rebuildAudioMenu();
+    void audioMenuChanged();
+
     SceneState sceneState;
     SceneView sceneView { sceneState };
     KitLibrary kitLibrary;                  // before `audio`, whose kit factory uses it
@@ -63,6 +67,8 @@ private:
     MidiSender midiSender;
     juce::ComboBox midiSelector;
     juce::Array<MidiSender::Output> midiOutputs; // as listed in midiSelector
+    juce::ComboBox audioSelector;
+    juce::StringArray audioDriverTypes;           // as listed in audioSelector
     int currentKit = 0;
     std::unique_ptr<juce::PropertiesFile> settings;
     juce::String audioStatus;
