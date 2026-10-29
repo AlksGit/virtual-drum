@@ -1,0 +1,15 @@
+# Normalize line endings (dev on Windows PC and macOS)
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binaries
+*.uf2 binary
+*.hex binary
+*.bin binary
+*.wav binary
+*.png binary
+*.pdf binary

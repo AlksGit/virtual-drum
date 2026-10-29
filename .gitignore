@@ -1,0 +1,22 @@
+# Zephyr / west
+build/
+**/build/
+twister-out*/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Recordings (can get large — keep a few reference sessions elsewhere or with git-lfs)
+recordings/
+*.csv
+
+# Host app
+host/Builds/
+host/JuceLibraryCode/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
