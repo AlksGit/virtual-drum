@@ -45,17 +45,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-023 | host : modèles procéduraux détaillés du kit
-  > Remplace les cylindres par des modèles détaillés générés en code : cercles et griffes,
-  > tirants et coquilles, peaux de frappe, pieds tripodes télescopiques, support de charleston,
-  > perches de cymbales, grosse caisse (décorative en attendant les pédales), siège, tapis.
-  > Aucun fichier externe (repo public, pas de licence à gérer). 60 fps.
-  > Branch: feat/task-023-detailed-models
-  > Blocked by: TASK-019 (les matériaux définissent l'apparence des pièces)
-
 ## ON HOLD
 
 ## DONE
+- [x] TASK-023 | host : modèles procéduraux détaillés du kit
+  > Merged in: devape (2026-10-29). Cercles, coquilles, tirants, grosse caisse avec pédale et logo
+  > néon, support de toms, tom basse sur pieds, tripodes, pieds à perche dégagés des pads,
+  > charleston avec pédale, siège. Captures : docs/images/host-3d-view*.png.
 - [x] TASK-004 | Vérification hardware IMU (devicetree, pins, I²C, power GPIO, INT1)
   > Merged in: devape (2026-10-29). IMU i2c0 @0x6A, INT1 P0.11, alim P1.08, batterie P0.31/P0.14,
   > charge P0.13, layout UF2 : tout sourcé dans HARDWARE.md. Restent : ratio du diviseur, taille FIFO.
