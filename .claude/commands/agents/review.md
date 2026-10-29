@@ -113,7 +113,8 @@ Tell user: **"Les tests ne passent pas. Lance `/agents/dev` avec ces observation
 1. Execute: `git checkout devape && git merge --no-ff <branch>`
 2. Push: `git push origin devape` (twice if needed — network bug)
 3. Update `BACKLOG.md`: move the task from IN PROGRESS to DONE with merge date
-4. Confirm to user: **"Tâche terminée et mergée dans devape. Lance `/agents/pm` pour la suite."**
+4. Confirm to user: **"Tâche terminée et mergée dans devape."**
+5. **Launch the PM agent yourself**: if nothing else is pending (no open question, no failed step), invoke the Skill tool with `agents:pm` right away. Do not ask the user to launch it.
 
 ## Workflow: Release to master
 
