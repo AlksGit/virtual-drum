@@ -2,12 +2,14 @@
 
 // Minimal drum sampler: one mono sample per pad, played with a gain that follows the
 // velocity, panned across the stereo field. render() runs on the audio thread: it never
-// allocates, locks or blocks.
+// allocates, frees, locks or blocks.
 
 #include "DrumKit.h"
 #include "HitQueue.h"
 
 #include <array>
+#include <atomic>
+#include <memory>
 #include <vector>
 
 namespace vdrum
@@ -20,8 +22,22 @@ class Sampler
 public:
     static constexpr int kMaxVoices = 24;
 
-    // Must be called before rendering starts (not on the audio thread).
+    Sampler();
+    ~Sampler();
+
+    Sampler (const Sampler&) = delete;
+    Sampler& operator= (const Sampler&) = delete;
+
+    // Replaces the samples immediately. Only while rendering is stopped.
     void setSamples (SampleBank bank);
+
+    // Thread-safe kit change while rendering: the bank is swapped in at the start of the next
+    // render() (playing voices stop). Returns false, leaving `bank` untouched, while a previous
+    // change is still pending or its old bank has not been collected with takeRetired().
+    bool requestSamples (std::unique_ptr<SampleBank>& bank);
+
+    // Bank replaced by the last swap, to be freed outside the audio thread. Null if none.
+    std::unique_ptr<SampleBank> takeRetired();
 
     // Velocity 0..1 to linear gain: a slightly expanding curve, as most drum samplers use.
     static float velocityToGain (float velocity);
@@ -32,8 +48,8 @@ public:
     // Starts a voice immediately. Audio thread only (or before rendering starts).
     void trigger (Pad pad, float velocity);
 
-    // Pops every pending hit from the queue, then mixes all active voices into
-    // left / right (overwritten). Audio thread only.
+    // Applies a pending kit change, pops every pending hit from the queue, then mixes all
+    // active voices into left / right (overwritten). Audio thread only.
     void render (HitQueue& queue, float* left, float* right, int numSamples);
 
     int activeVoiceCount() const noexcept;
@@ -48,7 +64,11 @@ private:
         unsigned age = 0; // trigger order, to steal the oldest voice
     };
 
-    SampleBank samples;
+    void applyPendingSwap();
+
+    SampleBank* active;                          // owned; used by the audio thread
+    std::atomic<SampleBank*> pending { nullptr }; // owned; set by requestSamples
+    std::atomic<SampleBank*> retired { nullptr }; // owned; collected by takeRetired
     std::array<Voice, kMaxVoices> voices {};
     unsigned triggerCounter = 0;
 };

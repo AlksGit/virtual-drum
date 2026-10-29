@@ -6,9 +6,43 @@
 namespace vdrum
 {
 
+namespace
+{
+
+constexpr int kRefreshKitsId = 1000;
+constexpr int kOpenKitsFolderId = 1001;
+const char* const kKitSetting = "kit";
+
+std::unique_ptr<juce::PropertiesFile> openSettings()
+{
+    juce::PropertiesFile::Options options;
+    options.applicationName = "Virtual Drum";
+    options.folderName = "Virtual Drum";
+    options.filenameSuffix = ".settings";
+    options.osxLibrarySubFolder = "Application Support";
+    return std::make_unique<juce::PropertiesFile> (options);
+}
+
+} // namespace
+
 MainComponent::MainComponent (const juce::String& commandLine)
+    : settings (openSettings())
 {
     addAndMakeVisible (sceneView);
+
+    // The kit list sits on top of the GL view: it has to be a child of that component.
+    kitSelector.setTooltip ("Sound kit (K for the next one)");
+    kitSelector.setWantsKeyboardFocus (false); // keep the keyboard shortcuts working
+    kitSelector.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xd010141c));
+    kitSelector.setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff27324a));
+    kitSelector.setColour (juce::ComboBox::textColourId, juce::Colour (0xffd8e0ee));
+    kitSelector.setColour (juce::ComboBox::arrowColourId, juce::Colour (0xff36c8ff));
+    kitSelector.onChange = [this] { kitMenuChanged(); };
+    sceneView.addAndMakeVisible (kitSelector);
+
+    rebuildKitMenu();
+    selectKit (kitLibrary.indexOf (settings->getValue (kKitSetting, synthKitName (SynthKit::studio))));
+
     setSize (1280, 720);
     setWantsKeyboardFocus (true);
 
@@ -82,6 +116,59 @@ void MainComponent::startSource (const juce::String& commandLine)
 void MainComponent::resized()
 {
     sceneView.setBounds (getLocalBounds());
+    kitSelector.setBounds (sceneView.getWidth() - 12 - 240, 12, 240, 28);
+}
+
+void MainComponent::rebuildKitMenu()
+{
+    kitSelector.clear (juce::dontSendNotification);
+    const auto& kits = kitLibrary.kits();
+    for (std::size_t i = 0; i < kits.size(); ++i)
+    {
+        if (i > 0 && ! kits[i].synthesised && kits[i - 1].synthesised)
+            kitSelector.addSeparator();
+        kitSelector.addItem ((kits[i].synthesised ? "" : "Samples: ") + kits[i].name, static_cast<int> (i) + 1);
+    }
+    kitSelector.addSeparator();
+    kitSelector.addItem ("Refresh list", kRefreshKitsId);
+    kitSelector.addItem ("Open kits folder...", kOpenKitsFolderId);
+    kitSelector.setSelectedId (currentKit + 1, juce::dontSendNotification);
+}
+
+void MainComponent::selectKit (int index)
+{
+    const auto& kits = kitLibrary.kits();
+    if (kits.empty())
+        return;
+
+    currentKit = juce::jlimit (0, static_cast<int> (kits.size()) - 1, index);
+    kitSelector.setSelectedId (currentKit + 1, juce::dontSendNotification);
+
+    const auto entry = kits[static_cast<std::size_t> (currentKit)];
+    audio.setKit ([this, entry] (double sampleRate) { return kitLibrary.load (entry, sampleRate); });
+
+    settings->setValue (kKitSetting, entry.name);
+    settings->saveIfNeeded();
+}
+
+void MainComponent::kitMenuChanged()
+{
+    const auto id = kitSelector.getSelectedId();
+
+    if (id == kRefreshKitsId || id == kOpenKitsFolderId)
+    {
+        const auto currentName = kitLibrary.kits()[static_cast<std::size_t> (currentKit)].name;
+        if (id == kOpenKitsFolderId)
+            kitLibrary.createUserKitsFolder().startAsProcess(); // opens it in Explorer / Finder
+
+        kitLibrary.rescan();
+        currentKit = kitLibrary.indexOf (currentName);
+        rebuildKitMenu();
+        return;
+    }
+
+    if (id > 0)
+        selectKit (id - 1);
 }
 
 bool MainComponent::keyPressed (const juce::KeyPress& key)
@@ -89,6 +176,12 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     if (key.getTextCharacter() == 'm' || key.getTextCharacter() == 'M')
     {
         audio.setMuted (! audio.isMuted());
+        return true;
+    }
+
+    if (key.getTextCharacter() == 'k' || key.getTextCharacter() == 'K')
+    {
+        selectKit ((currentKit + 1) % static_cast<int> (kitLibrary.kits().size()));
         return true;
     }
 
@@ -127,6 +220,7 @@ void MainComponent::timerCallback()
     if (fakeSource != nullptr)
         text << "   " << juce::String (juce::roundToInt (fakeSource->getTempo())) << " bpm (Up / Down)";
     text << "\n" << audioStatus << (audio.isMuted() ? "   [muted, M]" : "   (M to mute)");
+    text << "\nKit: " << kitLibrary.kits()[static_cast<std::size_t> (currentKit)].name << "   (K for the next one)";
     text << "\nDrag to orbit, wheel to zoom, double-click to reset";
 
     sceneView.setOverlayText (text);

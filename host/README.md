@@ -56,11 +56,19 @@ cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 open "Virtual Drum.app" --args --fake 120   # macOS
 ```
 In the 3D view: drag to orbit, mouse wheel to zoom, double-click to reset the camera.
-Up / Down change the tempo of the simulated drummer, M mutes the sound. The overlay shows the
+Up / Down change the tempo of the simulated drummer, M mutes the sound, K changes the kit. The overlay shows the
 data source, the frame rate, the tempo and the audio device with its buffer size and latency.
 
-Sound: each hit plays a drum sound synthesised at startup (no audio files in the repository),
-with a gain that follows the velocity. The app asks for 48 kHz and the smallest buffer from
+Sound: each hit plays the sound of the selected kit, with a gain that follows the velocity.
+Choose the kit in the list at the top right, or press K for the next one; the choice is
+remembered. Built-in kits are synthesised (no audio files in the repository): Studio, Rock,
+Jazz (brushes), Electro 808.
+
+**Your own samples**: choose "Open kits folder..." in the kit list (it creates
+`Documents/Virtual Drum/Kits`). Make one folder per kit, with one WAV, AIFF or FLAC file per pad
+named `hihat`, `snare`, `hightom`, `midtom`, `floortom`, `crash`, `ride` (aliases such as `hh`,
+`tom1`, `floor` work too), then "Refresh list". Missing pads use the Studio sounds; files are
+mixed to mono, resampled and normalised. `VDRUM_KITS_DIR` overrides the folder. The app asks for 48 kHz and the smallest buffer from
 64 samples up, preferring ASIO, then "Windows Audio (Low Latency Mode)" on Windows. Many
 built-in Windows drivers do not go below 480 samples (~10 ms) in shared mode; ASIO is needed
 to reach the latency target there. CoreAudio on macOS normally accepts 64 samples.
@@ -91,6 +99,7 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
 - `src/SceneRenderer.*`, `src/Shaders.h` — shadow map, PBR scene in HDR, bloom, tone mapping;
   hits light the pads, send a ring across drum heads and make cymbals swing
 - `src/AudioEngine.*` — audio output (JUCE device manager) playing the sampler
+- `src/KitLibrary.*` — built-in and user sample kits
 - `src/core/` — no JUCE dependency, unit tested:
   - `Packets.*` — C++ view of `protocol.h`, encode / decode
   - `FrameParser.*` — incremental USB frame parser with resynchronisation

@@ -13,12 +13,42 @@ constexpr int kPreferredBufferSize = 64;
 
 } // namespace
 
-AudioEngine::AudioEngine() = default;
+AudioEngine::AudioEngine()
+    : kitFactory ([] (double sampleRate) { return synthesiseKit (sampleRate); })
+{
+    // Frees kits replaced on the audio thread, and retries a kit change that had to wait.
+    startTimerHz (10);
+}
 
 AudioEngine::~AudioEngine()
 {
+    stopTimer();
     deviceManager.removeAudioCallback (this);
     deviceManager.closeAudioDevice();
+}
+
+void AudioEngine::setKit (KitFactory factory)
+{
+    kitFactory = std::move (factory);
+    kitChangePending = true;
+    submitKit();
+}
+
+void AudioEngine::submitKit()
+{
+    auto* device = deviceManager.getCurrentAudioDevice();
+    if (! kitChangePending || device == nullptr || ! device->isPlaying())
+        return; // applied by audioDeviceAboutToStart
+
+    auto bank = std::make_unique<SampleBank> (kitFactory (device->getCurrentSampleRate()));
+    if (sampler.requestSamples (bank))
+        kitChangePending = false; // otherwise retried by the timer
+}
+
+void AudioEngine::timerCallback()
+{
+    sampler.takeRetired(); // destroyed here, on the message thread
+    submitKit();
 }
 
 juce::String AudioEngine::start()
@@ -91,7 +121,8 @@ juce::String AudioEngine::describeDevice()
 void AudioEngine::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
     // Rendering is not running yet: allocations are fine here.
-    sampler.setSamples (synthesiseKit (device->getCurrentSampleRate()));
+    sampler.setSamples (kitFactory (device->getCurrentSampleRate()));
+    kitChangePending = false;
     const auto maxBlock = static_cast<std::size_t> (juce::jmax (device->getCurrentBufferSizeSamples(), 4096));
     scratchLeft.assign (maxBlock, 0.0f);
     scratchRight.assign (maxBlock, 0.0f);

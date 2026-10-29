@@ -98,7 +98,8 @@ target_sources(VirtualDrum
         src/MainComponent.cpp
         src/SceneView.cpp
         src/SceneRenderer.cpp
-        src/AudioEngine.cpp)
+        src/AudioEngine.cpp
+        src/KitLibrary.cpp)
 
 target_compile_definitions(VirtualDrum
     PRIVATE
@@ -111,6 +112,7 @@ target_link_libraries(VirtualDrum
     PRIVATE
         vdrum_core
         juce::juce_audio_devices
+        juce::juce_audio_formats
         juce::juce_gui_extra
         juce::juce_opengl
     PUBLIC
