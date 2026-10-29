@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick-complete.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch.rule"
+		},
+		{
+			"file" : "V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"stick"
+		],
+		"name" : "stick"
+	}
+}

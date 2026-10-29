@@ -1,0 +1,19 @@
+# ninja log v7
+33	136	8149810003152572	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir	76a3672b02aae518
+33	136	8149810003152572	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir	76a3672b02aae518
+136	202	8149810003814869	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download	c44eac94e016d31b
+136	202	8149810003814869	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download	c44eac94e016d31b
+202	307	8149810004800955	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update	9a488ab6a005df1a
+202	307	8149810004800955	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update	9a488ab6a005df1a
+307	388	8149810005665305	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch	9e605663f1c01aec
+307	388	8149810005665305	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch	9e605663f1c01aec
+388	451	8149810006304592	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure	10eaaf4f1d4633b4
+388	451	8149810006304592	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure	10eaaf4f1d4633b4
+451	52148	8149810006375506	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build	1f391e85b88e5089
+451	52148	8149810006375506	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build	1f391e85b88e5089
+52148	52304	8149810523331536	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install	7fae438704cc2a59
+52148	52304	8149810523331536	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install	7fae438704cc2a59
+52304	52408	8149810525861550	_sysbuild/sysbuild/images/CMakeFiles/stick-complete	1abefb8f4383c57e
+52304	52408	8149810525861550	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-done	1abefb8f4383c57e
+52304	52408	8149810525861550	V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick-complete	1abefb8f4383c57e
+52304	52408	8149810525861550	V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-done	1abefb8f4383c57e

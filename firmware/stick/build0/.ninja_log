@@ -1,0 +1,19 @@
+# ninja log v7
+38	136	8149809213367030	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir	3abd967bd304bb19
+38	136	8149809213367030	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir	3abd967bd304bb19
+136	222	8149809214348883	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download	e36c4b0d197716e4
+136	222	8149809214348883	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download	e36c4b0d197716e4
+222	289	8149809215025231	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update	f7418dfe8b9a2886
+222	289	8149809215025231	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update	f7418dfe8b9a2886
+290	357	8149809215697533	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch	edf6294b661079b3
+290	357	8149809215697533	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch	edf6294b661079b3
+357	445	8149809216577322	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure	4b6c572285efd291
+357	445	8149809216577322	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure	4b6c572285efd291
+445	53346	8149809216655443	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build	6b1474ecaf973ed6
+445	53346	8149809216655443	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build	6b1474ecaf973ed6
+53346	53400	8149809745657047	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install	577961bdfef998b6
+53346	53400	8149809745657047	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install	577961bdfef998b6
+53400	53506	8149809747144052	_sysbuild/sysbuild/images/CMakeFiles/stick-complete	bf4bf8c56d6d0b8
+53400	53506	8149809747144052	_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-done	bf4bf8c56d6d0b8
+53400	53506	8149809747144052	V:/firmware/stick/build0/_sysbuild/sysbuild/images/CMakeFiles/stick-complete	bf4bf8c56d6d0b8
+53400	53506	8149809747144052	V:/firmware/stick/build0/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-done	bf4bf8c56d6d0b8

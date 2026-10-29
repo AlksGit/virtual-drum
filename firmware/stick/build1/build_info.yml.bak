@@ -1,0 +1,22 @@
+cmake:
+  board:
+    name: 'xiao_ble'
+    path:
+     - 'C:/ncs/v3.4.1/zephyr/boards/seeed/xiao_ble'
+    qualifiers: 'nrf52840/sense'
+    revision: ''
+  images:
+   - name: 'stick'
+     source-dir: 'V:/firmware/stick'
+     type: 'MAIN'
+  kconfig:
+    files:
+     - 'V:/firmware/stick/build1/_sysbuild/empty.conf'
+     - 'V:/firmware/stick/build1/_sysbuild/empty.conf'
+    user-files:
+     - 'V:/firmware/stick/build1/_sysbuild/empty.conf'
+version: '0.1.0'
+west:
+  command: 'C:\ncs\toolchains\4f5b6ad6dd\opt\bin\Scripts\west build -b xiao_ble/nrf52840/sense firmware/stick -d firmware/stick/build1 -p always -- -DCONFIG_VDRUM_STICK_ID=1'
+  topdir: 'C:\ncs\v3.4.1'
+  version: '1.5.0'

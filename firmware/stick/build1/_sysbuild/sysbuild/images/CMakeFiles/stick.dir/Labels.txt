@@ -1,0 +1,13 @@
+# Target labels
+ stick
+# Source files and their labels
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/CMakeFiles/stick-complete.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-build.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-configure.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-download.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-install.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-mkdir.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-patch.rule
+V:/firmware/stick/build1/_sysbuild/sysbuild/images/stick-prefix/src/stick-stamp/stick-update.rule

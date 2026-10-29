@@ -1,0 +1,7 @@
+default: stick
+build_dir: V:/firmware/stick/build0
+domains:
+  - name: stick
+    build_dir: V:/firmware/stick/build0/stick
+flash_order:
+  - stick
