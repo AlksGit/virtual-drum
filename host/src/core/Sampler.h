@@ -15,7 +15,18 @@
 namespace vdrum
 {
 
-using SampleBank = std::array<std::vector<float>, kDrumKit.size()>;
+// The sound of one pad. One layer: its gain follows the velocity curve. Several layers, softest
+// first (multi-sampled kits): the velocity picks the layer, and the recorded level of each layer
+// carries the dynamics.
+struct PadSound
+{
+    std::vector<std::vector<float>> layers;
+
+    PadSound() = default;
+    PadSound (std::vector<float> single) { layers.push_back (std::move (single)); } // NOLINT: implicit on purpose
+};
+
+using SampleBank = std::array<PadSound, kDrumKit.size()>;
 
 class Sampler
 {
@@ -41,6 +52,9 @@ public:
 
     // Velocity 0..1 to linear gain: a slightly expanding curve, as most drum samplers use.
     static float velocityToGain (float velocity);
+
+    // Layer index and gain for a velocity, given the number of layers of the pad.
+    static void chooseLayer (std::size_t layerCount, float velocity, std::size_t& layer, float& gain);
 
     // Equal-power pan per pad, seen from the player (hi-hat left, ride right).
     static void padPan (Pad pad, float& left, float& right);

@@ -58,3 +58,8 @@ Format : date — décision — pourquoi — alternatives écartées.
   la plus récente, carte `xiao_ble` (variante `sense`) supportée avec le partitionnement UF2.
   Installée sans changer la toolchain par défaut ni l'enregistrement CMake global, pour ne pas
   perturber d'autres projets NCS (v2.3.0 / v2.5.0) présents sur le PC.
+- **2026-10** — Samples acoustiques : kits **CC0** de Karoryfer (Swirly, Big Rusty) **téléchargés
+  par un script** (`tools/fetch_kits.py`, commits figés), jamais commités ; **couches de vélocité**
+  dans le sampler (`<pad>_v<N>`, normalisées ensemble pour garder la dynamique enregistrée).
+  — Repo public : CC0 évite toute obligation d'attribution ou de partage ; le script garde le
+  repo léger. Écartés : Salamander (CC-BY-SA, archive de 387 Mo), samples commités dans le repo.

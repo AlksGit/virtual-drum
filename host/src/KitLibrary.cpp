@@ -1,5 +1,7 @@
 #include "KitLibrary.h"
 
+#include "KitFiles.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -34,6 +36,8 @@ const char* const kReadme =
     "\n"
     "Create one folder per kit here. Inside, put one audio file per pad (WAV, AIFF or FLAC):\n"
     "  hihat  snare  hightom  midtom  floortom  crash  ride      (e.g. snare.wav)\n"
+    "or several velocity layers per pad, softest first: snare_v1.wav, snare_v2.wav, ...\n"
+    "(tools/fetch_kits.py downloads free multi-layer kits here).\n"
     "Missing pads use the built-in Studio sounds. Then choose \"Refresh list\" in the app.\n";
 
 } // namespace
@@ -125,14 +129,6 @@ std::vector<float> KitLibrary::loadFile (const juce::File& file, double sampleRa
         mono = std::move (resampled);
     }
 
-    // Normalise like the built-in sounds, so that velocity behaves the same on every kit.
-    float peak = 0.0f;
-    for (const auto s : mono)
-        peak = std::max (peak, std::abs (s));
-    if (peak > 0.0f)
-        for (auto& s : mono)
-            s *= 0.9f / peak;
-
     return mono;
 }
 
@@ -145,20 +141,47 @@ SampleBank KitLibrary::load (const KitEntry& kit, double sampleRate)
     const auto files = kit.folder.findChildFiles (juce::File::findFiles, false, "*.wav;*.aif;*.aiff;*.flac");
 
     for (std::size_t pad = 0; pad < kPadFileNames.size(); ++pad)
+    {
+        // All the files of this pad, ordered by layer (a plain "snare.wav" is layer 0).
+        std::vector<std::pair<int, juce::File>> matches;
         for (const auto& file : files)
         {
             const auto stem = normaliseName (file.getFileNameWithoutExtension());
-            const auto& names = kPadFileNames[pad];
-            if (std::none_of (names.begin(), names.end(), [&stem] (const char* n) { return normaliseName (n) == stem; }))
-                continue;
-
-            auto sound = loadFile (file, sampleRate);
-            if (! sound.empty())
+            for (const auto* name : kPadFileNames[pad])
             {
-                bank[pad] = std::move (sound);
-                break;
+                const auto layer = padLayerFromStem (stem.toStdString(), normaliseName (name).toStdString());
+                if (layer >= 0)
+                {
+                    matches.emplace_back (layer, file);
+                    break;
+                }
             }
         }
+        std::sort (matches.begin(), matches.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
+
+        PadSound sound;
+        for (const auto& match : matches)
+        {
+            auto layer = loadFile (match.second, sampleRate);
+            if (! layer.empty())
+                sound.layers.push_back (std::move (layer));
+        }
+        if (sound.layers.empty())
+            continue;
+
+        // Normalise the loudest layer like the built-in sounds; the others keep their level
+        // relative to it, which carries the dynamics of multi-sampled kits.
+        float peak = 0.0f;
+        for (const auto& layer : sound.layers)
+            for (const auto s : layer)
+                peak = std::max (peak, std::abs (s));
+        if (peak > 0.0f)
+            for (auto& layer : sound.layers)
+                for (auto& s : layer)
+                    s *= 0.9f / peak;
+
+        bank[pad] = std::move (sound);
+    }
 
     return bank;
 }

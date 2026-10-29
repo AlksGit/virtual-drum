@@ -77,6 +77,22 @@ float Sampler::velocityToGain (float velocity)
     return std::pow (v, 1.6f);
 }
 
+void Sampler::chooseLayer (std::size_t layerCount, float velocity, std::size_t& layer, float& gain)
+{
+    const auto v = std::clamp (velocity, 0.0f, 1.0f);
+    if (layerCount <= 1)
+    {
+        layer = 0;
+        gain = velocityToGain (v);
+        return;
+    }
+
+    // Even split of the velocity range; within a layer, a mild gain slope smooths the steps.
+    const auto position = v * static_cast<float> (layerCount);
+    layer = std::min (layerCount - 1, static_cast<std::size_t> (position));
+    gain = 0.85f + 0.15f * std::clamp (position - static_cast<float> (layer), 0.0f, 1.0f);
+}
+
 void Sampler::padPan (Pad pad, float& left, float& right)
 {
     // Pan from the pad azimuth: +50 degrees (left) to -50 degrees (right) maps to -1..1.
@@ -88,7 +104,14 @@ void Sampler::padPan (Pad pad, float& left, float& right)
 
 void Sampler::trigger (Pad pad, float velocity)
 {
-    const auto& sample = (*active)[static_cast<std::size_t> (pad)];
+    const auto& sound = (*active)[static_cast<std::size_t> (pad)];
+    if (sound.layers.empty())
+        return;
+
+    std::size_t layer = 0;
+    float layerGain = 1.0f;
+    chooseLayer (sound.layers.size(), velocity, layer, layerGain);
+    const auto& sample = sound.layers[layer];
     if (sample.empty())
         return;
 
@@ -107,7 +130,7 @@ void Sampler::trigger (Pad pad, float velocity)
 
     float left = 0.0f, right = 0.0f;
     padPan (pad, left, right);
-    const auto gain = velocityToGain (velocity) * kMasterGain;
+    const auto gain = layerGain * kMasterGain;
 
     target->sample = &sample;
     target->position = 0;

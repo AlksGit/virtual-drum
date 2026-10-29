@@ -30,6 +30,15 @@ saturated samples marked and lost packets shaded. Prints, per stick: received sa
 packets lost and saturated samples. (Conversion to g and deg/s waits for the sensitivities to
 be checked in the datasheet, TASK-004.)
 
+## fetch_kits.py — free sampled kits for the app
+```
+python tools/fetch_kits.py              # Swirly + Big Rusty (Karoryfer, CC0), 6 layers per pad
+python tools/fetch_kits.py --kit swirly --layers 8
+```
+Downloads files one by one from the sfzinstruments repositories (pinned commits) into
+`Documents/Virtual Drum/Kits` (or `$VDRUM_KITS_DIR`, `--dest`), named `<pad>_v<N>` for the app.
+The softest quarter of the recorded layers is skipped (30-40 dB down, silent on a virtual kit).
+
 ## detect_hits.py — hit detection prototype (phase 1 groundwork)
 ```
 python tools/detect_hits.py                        # simulated sessions, scored against truth

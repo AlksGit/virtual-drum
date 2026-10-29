@@ -3,6 +3,7 @@
 #include "DrumSynth.h"
 #include "FakeDrummer.h"
 #include "HitQueue.h"
+#include "KitFiles.h"
 #include "Quaternion.h"
 #include "Sampler.h"
 #include "SceneState.h"
@@ -41,8 +42,8 @@ float rms (const std::vector<float>& data, std::size_t begin, std::size_t end)
 SampleBank constantBank (std::size_t length, float level = 1.0f)
 {
     SampleBank bank;
-    for (auto& sample : bank)
-        sample.assign (length, level);
+    for (auto& sound : bank)
+        sound = std::vector<float> (length, level);
     return bank;
 }
 
@@ -269,7 +270,7 @@ VDRUM_TEST (kitSwapHappensAtTheNextRenderAndStopsVoices)
 
     auto old = sampler.takeRetired();
     REQUIRE (old != nullptr);
-    CHECK ((*old)[0][0] == 1.0f);
+    CHECK ((*old)[0].layers[0][0] == 1.0f);
     CHECK (sampler.takeRetired() == nullptr);
 }
 
@@ -313,4 +314,56 @@ VDRUM_TEST (synthesisedKitsAreUsableAndDistinct)
     for (const auto kit : { SynthKit::rock, SynthKit::jazz, SynthKit::electro })
         for (const auto& info : kDrumKit)
             CHECK (synthesiseDrum (info.pad, kSampleRate, kit) != synthesiseDrum (info.pad, kSampleRate, SynthKit::studio));
+}
+
+VDRUM_TEST (velocityPicksTheLayerOfMultiSampledPads)
+{
+    std::size_t layer = 99;
+    float gain = 0.0f;
+
+    Sampler::chooseLayer (1, 0.5f, layer, gain); // single layer: classic velocity curve
+    CHECK (layer == 0);
+    CHECK (std::abs (gain - Sampler::velocityToGain (0.5f)) < 1.0e-6f);
+
+    Sampler::chooseLayer (4, 0.0f, layer, gain);
+    CHECK (layer == 0);
+    Sampler::chooseLayer (4, 0.30f, layer, gain);
+    CHECK (layer == 1);
+    Sampler::chooseLayer (4, 1.0f, layer, gain);
+    CHECK (layer == 3);
+    CHECK (gain > 0.84f && gain <= 1.0f);
+}
+
+VDRUM_TEST (multiSampledPadsPlayTheChosenLayerAtItsOwnLevel)
+{
+    SampleBank bank;
+    PadSound snare;
+    snare.layers = { std::vector<float> (64, 0.2f), std::vector<float> (64, 0.8f) }; // soft, loud
+    bank[static_cast<std::size_t> (Pad::snare)] = snare;
+
+    Sampler sampler;
+    sampler.setSamples (std::move (bank));
+    HitQueue queue;
+    std::vector<float> soft (64), loud (64), unused (64);
+
+    sampler.trigger (Pad::snare, 0.2f);
+    sampler.render (queue, soft.data(), unused.data(), 64);
+    sampler.trigger (Pad::snare, 0.95f);
+    sampler.render (queue, loud.data(), unused.data(), 64);
+
+    // The loud layer is four times louder; gains inside layers only vary between 0.85 and 1.
+    CHECK (loud[0] > 3.0f * soft[0]);
+}
+
+VDRUM_TEST (kitFileNamesGiveThePadLayer)
+{
+    CHECK (padLayerFromStem ("snare", "snare") == 0);
+    CHECK (padLayerFromStem ("snarev1", "snare") == 1);
+    CHECK (padLayerFromStem ("snarev12", "snare") == 12);
+    CHECK (padLayerFromStem ("snarev", "snare") == -1);
+    CHECK (padLayerFromStem ("snarevx", "snare") == -1);
+    CHECK (padLayerFromStem ("snaretop", "snare") == -1);
+    CHECK (padLayerFromStem ("floortomv2", "floor") == -1); // "floor" is another name of the pad
+    CHECK (padLayerFromStem ("floortomv2", "floortom") == 2);
+    CHECK (padLayerFromStem ("sn", "snare") == -1);
 }
