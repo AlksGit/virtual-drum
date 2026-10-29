@@ -15,18 +15,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
-- [ ] TASK-029 | Corrections pré-hardware issues de la revue experte (firmware, host, tools)
-  > Firmware : délais de retransmission ESB valides (>= 435 µs) et écartés, fast ramp-up,
-  > FIFO IMU qui ne reste pas bloquée (relecture d'état), état FIFO en une lecture groupée,
-  > horodatage pris dans l'interruption, compteurs radio (tentatives, échecs) dans STATUS
-  > (protocole v4). Host : kit refusé gardé et réessayé, kit en attente purgé au redémarrage audio,
-  > fondu sur vol de voix + limite par pad, synthèse seulement des pads manquants. Tools : pertes
-  > correctes après rebouclage du seq et avec les paquets STATUS, matching en O(n log n), CRC par
-  > table, seuil de saturation commun, dt réel dans le détecteur.
-  > Demandé par l'utilisateur le 2026-10-29 après la revue experte.
-  > Branch: feat/task-029-pre-hardware-fixes
-  > Blocked by: —
-
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
@@ -37,6 +25,11 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-029 | Corrections pré-hardware issues de la revue experte (firmware, host, tools)
+  > Merged in: devape (2026-10-29). Radio : l'init ESB échouait (délai < 435 µs), corrigé ; IMU qui
+  > pouvait rester bloquée, horodatage revu (relu par un 2e agent) ; protocole v4 (compteurs dans
+  > STATUS) ; pertes correctes dans plot_session ; voix en fondu. Points à vérifier sur carte dans
+  > docs/HARDWARE.md.
 - [x] TASK-025 | tools : téléchargement de kits de samples libres
   > Merged in: devape (2026-10-29). `tools/fetch_kits.py` : Swirly et Big Rusty (Karoryfer, CC0),
   > 6 couches de vélocité par pad, rien de commité. Sampler multi-couches. Chargement vérifié dans l'app.
