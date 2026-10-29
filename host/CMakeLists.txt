@@ -28,7 +28,9 @@ add_library(vdrum_core STATIC
     src/core/SerialDataSource.cpp
     src/core/FakeDrummer.cpp
     src/core/FakeDataSource.cpp
-    src/core/Mesh.cpp)
+    src/core/Mesh.cpp
+    src/core/Sampler.cpp
+    src/core/DrumSynth.cpp)
 
 if(WIN32)
     target_sources(vdrum_core PRIVATE src/core/SerialPort_windows.cpp)
@@ -62,7 +64,8 @@ add_executable(vdrum_tests
     tests/ProtocolTests.cpp
     tests/SerialTests.cpp
     tests/FakeSourceTests.cpp
-    tests/SceneTests.cpp)
+    tests/SceneTests.cpp
+    tests/SamplerTests.cpp)
 
 target_link_libraries(vdrum_tests
     PRIVATE
@@ -91,7 +94,8 @@ target_sources(VirtualDrum
     PRIVATE
         src/Main.cpp
         src/MainComponent.cpp
-        src/SceneView.cpp)
+        src/SceneView.cpp
+        src/AudioEngine.cpp)
 
 target_compile_definitions(VirtualDrum
     PRIVATE
@@ -103,6 +107,7 @@ target_compile_definitions(VirtualDrum
 target_link_libraries(VirtualDrum
     PRIVATE
         vdrum_core
+        juce::juce_audio_devices
         juce::juce_gui_extra
         juce::juce_opengl
     PUBLIC

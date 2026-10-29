@@ -151,7 +151,7 @@ void SceneView::setOverlayText (const juce::String& text)
 
 void SceneView::resized()
 {
-    overlay.setBounds (getLocalBounds().reduced (12).removeFromTop (60));
+    overlay.setBounds (getLocalBounds().reduced (12).removeFromTop (80));
 }
 
 void SceneView::resetCamera()

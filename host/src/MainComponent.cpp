@@ -14,6 +14,17 @@ MainComponent::MainComponent (const juce::String& commandLine)
 
     startSource (commandLine);
     startTimerHz (4);
+
+    // Opening the audio device can take a second or two: do it once the window is shown.
+    audioStatus = "Opening audio...";
+    juce::Component::SafePointer<MainComponent> safeThis (this);
+    juce::MessageManager::callAsync ([safeThis]
+    {
+        if (safeThis == nullptr)
+            return;
+        const auto error = safeThis->audio.start();
+        safeThis->audioStatus = error.isEmpty() ? safeThis->audio.describeDevice() : "Audio off: " + error;
+    });
 }
 
 MainComponent::~MainComponent()
@@ -62,6 +73,12 @@ void MainComponent::resized()
 
 bool MainComponent::keyPressed (const juce::KeyPress& key)
 {
+    if (key.getTextCharacter() == 'm' || key.getTextCharacter() == 'M')
+    {
+        audio.setMuted (! audio.isMuted());
+        return true;
+    }
+
     if (fakeSource == nullptr)
         return false;
 
@@ -76,6 +93,9 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
 
 void MainComponent::frameReceived (const protocol::Frame& frame)
 {
+    if (const auto* hit = std::get_if<protocol::HitPacket> (&frame.packet))
+        audio.pushHit ({ nearestPad (Quat::fromQ14 (hit->quat)), static_cast<float> (hit->velocity) / 127.0f });
+
     sceneState.apply (frame, steadySeconds());
 }
 
@@ -93,6 +113,7 @@ void MainComponent::timerCallback()
     auto text = statusText + "   " + juce::String (juce::roundToInt (sceneView.getFramesPerSecond())) + " fps";
     if (fakeSource != nullptr)
         text << "   " << juce::String (juce::roundToInt (fakeSource->getTempo())) << " bpm (Up / Down)";
+    text << "\n" << audioStatus << (audio.isMuted() ? "   [muted, M]" : "   (M to mute)");
     text << "\nDrag to orbit, wheel to zoom, double-click to reset";
 
     sceneView.setOverlayText (text);
