@@ -46,7 +46,30 @@ To build against a local JUCE checkout instead of downloading it (must be the sa
 cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 ```
 
+## Tests
+Unit tests (protocol, frame parser, serial port) build with the app and run with CTest:
+```
+ctest --test-dir build -C Release --output-on-failure
+```
+They also run in CI on Windows and macOS (`.github/workflows/host.yml`).
+
+## vdrum_monitor
+Command-line tool for hardware bring-up, built next to the app:
+```
+vdrum_monitor --list         # serial ports with their USB ids
+vdrum_monitor                # auto-detect the receiver and print received frames
+vdrum_monitor --port COM5    # read a given port (/dev/cu.usbmodem... on macOS)
+```
+The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`.
+
 ## Layout
 - `src/Main.cpp` — application and main window
 - `src/MainComponent.*` — top-level content
 - `src/SceneView.*` — OpenGL 4.1 Core context for the 3D view (renders on JUCE's GL thread)
+- `src/core/` — no JUCE dependency, unit tested:
+  - `Packets.*` — C++ view of `protocol.h`, encode / decode
+  - `FrameParser.*` — incremental USB frame parser with resynchronisation
+  - `DataSource.h` — interface for anything that produces frames
+  - `SerialDataSource.*`, `SerialPort*` — the USB receiver over a serial port
+- `src/tools/Monitor.cpp` — `vdrum_monitor`
+- `tests/` — unit tests
