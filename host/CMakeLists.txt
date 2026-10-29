@@ -27,7 +27,8 @@ add_library(vdrum_core STATIC
     src/core/SerialPort.cpp
     src/core/SerialDataSource.cpp
     src/core/FakeDrummer.cpp
-    src/core/FakeDataSource.cpp)
+    src/core/FakeDataSource.cpp
+    src/core/Mesh.cpp)
 
 if(WIN32)
     target_sources(vdrum_core PRIVATE src/core/SerialPort_windows.cpp)
@@ -60,7 +61,8 @@ add_executable(vdrum_tests
     tests/TestMain.cpp
     tests/ProtocolTests.cpp
     tests/SerialTests.cpp
-    tests/FakeSourceTests.cpp)
+    tests/FakeSourceTests.cpp
+    tests/SceneTests.cpp)
 
 target_link_libraries(vdrum_tests
     PRIVATE

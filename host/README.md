@@ -46,6 +46,17 @@ To build against a local JUCE checkout instead of downloading it (must be the sa
 cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 ```
 
+## Running the app
+```
+"Virtual Drum.exe"                 # Windows: receiver if detected, simulated drummer otherwise
+"Virtual Drum.exe" --fake 120      # force the simulated drummer, at 120 bpm
+"Virtual Drum.exe" --port COM5     # force a serial port
+open "Virtual Drum.app" --args --fake 120   # macOS
+```
+In the 3D view: drag to orbit, mouse wheel to zoom, double-click to reset the camera.
+Up / Down change the tempo of the simulated drummer. The overlay shows the data source,
+the frame rate and the tempo.
+
 ## Tests
 Unit tests (protocol, frame parser, serial port) build with the app and run with CTest:
 ```
@@ -68,7 +79,7 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
 ## Layout
 - `src/Main.cpp` — application and main window
 - `src/MainComponent.*` — top-level content
-- `src/SceneView.*` — OpenGL 4.1 Core context for the 3D view (renders on JUCE's GL thread)
+- `src/SceneView.*` — 3D view, OpenGL 4.1 Core (renders on JUCE's GL thread)
 - `src/core/` — no JUCE dependency, unit tested:
   - `Packets.*` — C++ view of `protocol.h`, encode / decode
   - `FrameParser.*` — incremental USB frame parser with resynchronisation
@@ -77,5 +88,7 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
   - `FakeDrummer.*` — deterministic simulated drummer (groove, fills, stick motion)
   - `FakeDataSource.*` — plays the fake drummer in real time through the real wire format
   - `DrumKit.h` — hit zones of the kit (azimuth / elevation), `Quaternion.h` — orientation math
+  - `KitLayout.h` — physical placement of the pads, `Mesh.*` — procedural meshes, `Mat4.h`
+  - `SceneState.h` — thread-safe state shared by the data source and the renderer
 - `src/tools/Monitor.cpp` — `vdrum_monitor`
 - `tests/` — unit tests
