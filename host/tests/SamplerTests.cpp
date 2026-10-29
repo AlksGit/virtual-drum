@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -36,15 +37,13 @@ float rms (const std::vector<float>& data, std::size_t begin, std::size_t end)
     return static_cast<float> (std::sqrt (sum / static_cast<double> (end - begin)));
 }
 
-// Sampler whose every pad plays a constant 1.0 for `length` samples.
-Sampler makeConstantSampler (std::size_t length)
+// Bank where every pad plays a constant `level` for `length` samples.
+SampleBank constantBank (std::size_t length, float level = 1.0f)
 {
     SampleBank bank;
     for (auto& sample : bank)
-        sample.assign (length, 1.0f);
-    Sampler sampler;
-    sampler.setSamples (std::move (bank));
-    return sampler;
+        sample.assign (length, level);
+    return bank;
 }
 
 } // namespace
@@ -76,7 +75,8 @@ VDRUM_TEST (panFollowsThePadPosition)
 
 VDRUM_TEST (aTriggeredVoicePlaysOnceThenStops)
 {
-    auto sampler = makeConstantSampler (100);
+    Sampler sampler;
+    sampler.setSamples (constantBank (100));
     HitQueue queue;
     std::vector<float> left (256), right (256);
 
@@ -91,7 +91,8 @@ VDRUM_TEST (aTriggeredVoicePlaysOnceThenStops)
 
 VDRUM_TEST (louderHitsAreLouder)
 {
-    auto sampler = makeConstantSampler (64);
+    Sampler sampler;
+    sampler.setSamples (constantBank (64));
     HitQueue queue;
     std::vector<float> soft (64), loud (64), unused (64);
 
@@ -105,7 +106,8 @@ VDRUM_TEST (louderHitsAreLouder)
 
 VDRUM_TEST (hitsFromTheQueueStartAtTheNextBlock)
 {
-    auto sampler = makeConstantSampler (1000);
+    Sampler sampler;
+    sampler.setSamples (constantBank (1000));
     HitQueue queue;
     std::vector<float> left (64), right (64);
 
@@ -119,7 +121,8 @@ VDRUM_TEST (hitsFromTheQueueStartAtTheNextBlock)
 
 VDRUM_TEST (voicesAreStolenWhenAllAreBusy)
 {
-    auto sampler = makeConstantSampler (100000);
+    Sampler sampler;
+    sampler.setSamples (constantBank (100000));
     for (int i = 0; i < Sampler::kMaxVoices + 10; ++i)
         sampler.trigger (Pad::ride, 0.5f);
     CHECK (sampler.activeVoiceCount() == Sampler::kMaxVoices);
@@ -127,7 +130,8 @@ VDRUM_TEST (voicesAreStolenWhenAllAreBusy)
 
 VDRUM_TEST (outputNeverExceedsFullScale)
 {
-    auto sampler = makeConstantSampler (512);
+    Sampler sampler;
+    sampler.setSamples (constantBank (512));
     HitQueue queue;
     for (int i = 0; i < Sampler::kMaxVoices; ++i)
         sampler.trigger (Pad::snare, 1.0f);
@@ -238,4 +242,75 @@ VDRUM_TEST (fakeGrooveProducesSoundRightAfterEachHit)
     CHECK (peak (output, 0, hitBlocks.front()) == 0.0f); // silence before the first hit
     for (const auto start : hitBlocks)
         CHECK (peak (output, start, start + kBlock) > 0.01f); // sound within one block of each hit
+}
+
+VDRUM_TEST (kitSwapHappensAtTheNextRenderAndStopsVoices)
+{
+    Sampler sampler;
+    sampler.setSamples (constantBank (1000, 1.0f));
+    HitQueue queue;
+    std::vector<float> left (64), right (64);
+
+    sampler.trigger (Pad::snare, 1.0f);
+    auto next = std::make_unique<SampleBank> (constantBank (1000, 0.25f));
+    REQUIRE (sampler.requestSamples (next));
+    CHECK (next == nullptr); // ownership taken
+    CHECK (sampler.activeVoiceCount() == 1); // nothing changes before the audio thread runs
+
+    sampler.render (queue, left.data(), right.data(), 64);
+    CHECK (peak (left) == 0.0f); // the playing voice stopped with the old kit
+    CHECK (sampler.activeVoiceCount() == 0);
+
+    sampler.trigger (Pad::snare, 1.0f);
+    sampler.render (queue, left.data(), right.data(), 64);
+    float leftGain = 0.0f, rightGain = 0.0f;
+    Sampler::padPan (Pad::snare, leftGain, rightGain);
+    CHECK (std::abs (left[0] - std::tanh (0.25f * 0.6f * leftGain)) < 1.0e-5f); // new kit's level
+
+    auto old = sampler.takeRetired();
+    REQUIRE (old != nullptr);
+    CHECK ((*old)[0][0] == 1.0f);
+    CHECK (sampler.takeRetired() == nullptr);
+}
+
+VDRUM_TEST (kitRequestsWaitUntilTheOldKitIsCollected)
+{
+    Sampler sampler;
+    HitQueue queue;
+    std::vector<float> left (16), right (16);
+
+    auto first = std::make_unique<SampleBank> (constantBank (10));
+    REQUIRE (sampler.requestSamples (first));
+
+    auto second = std::make_unique<SampleBank> (constantBank (20));
+    CHECK (! sampler.requestSamples (second)); // still pending
+    CHECK (second != nullptr);                  // left untouched
+
+    sampler.render (queue, left.data(), right.data(), 16);
+    CHECK (! sampler.requestSamples (second)); // old bank not collected yet
+
+    CHECK (sampler.takeRetired() != nullptr);
+    CHECK (sampler.requestSamples (second));
+}
+
+VDRUM_TEST (synthesisedKitsAreUsableAndDistinct)
+{
+    for (const auto kit : kSynthKits)
+        for (const auto& info : kDrumKit)
+        {
+            const auto sound = synthesiseDrum (info.pad, kSampleRate, kit);
+            REQUIRE (sound.size() > static_cast<std::size_t> (0.1 * kSampleRate));
+            CHECK (std::abs (peak (sound) - 0.9f) < 0.01f);
+            bool finite = true;
+            for (const auto s : sound)
+                finite = finite && std::isfinite (s);
+            CHECK (finite);
+            const auto tenth = sound.size() / 10;
+            CHECK (rms (sound, sound.size() - tenth, sound.size()) < 0.25f * rms (sound, 0, tenth));
+        }
+
+    // Each kit sounds different from the studio kit on every pad.
+    for (const auto kit : { SynthKit::rock, SynthKit::jazz, SynthKit::electro })
+        for (const auto& info : kDrumKit)
+            CHECK (synthesiseDrum (info.pad, kSampleRate, kit) != synthesiseDrum (info.pad, kSampleRate, SynthKit::studio));
 }

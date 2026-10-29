@@ -19,11 +19,56 @@ float softClip (float x)
 
 } // namespace
 
+Sampler::Sampler() : active (new SampleBank()) {}
+
+Sampler::~Sampler()
+{
+    delete active;
+    delete pending.exchange (nullptr);
+    delete retired.exchange (nullptr);
+}
+
 void Sampler::setSamples (SampleBank bank)
 {
     for (auto& voice : voices)
         voice = {};
-    samples = std::move (bank);
+    *active = std::move (bank);
+}
+
+bool Sampler::requestSamples (std::unique_ptr<SampleBank>& bank)
+{
+    if (bank == nullptr || pending.load() != nullptr || retired.load() != nullptr)
+        return false;
+
+    SampleBank* expected = nullptr;
+    if (! pending.compare_exchange_strong (expected, bank.get()))
+        return false;
+
+    bank.release(); // now owned through `pending`
+    return true;
+}
+
+std::unique_ptr<SampleBank> Sampler::takeRetired()
+{
+    return std::unique_ptr<SampleBank> (retired.exchange (nullptr));
+}
+
+void Sampler::applyPendingSwap()
+{
+    // Only swap when the previous old bank has been collected, so nothing is freed here.
+    if (retired.load (std::memory_order_acquire) != nullptr)
+        return;
+
+    auto* next = pending.exchange (nullptr, std::memory_order_acq_rel);
+    if (next == nullptr)
+        return;
+
+    // Voices point into the old bank: stop them before it changes hands.
+    for (auto& voice : voices)
+        voice.sample = nullptr;
+
+    retired.store (active, std::memory_order_release);
+    active = next;
 }
 
 float Sampler::velocityToGain (float velocity)
@@ -43,7 +88,7 @@ void Sampler::padPan (Pad pad, float& left, float& right)
 
 void Sampler::trigger (Pad pad, float velocity)
 {
-    const auto& sample = samples[static_cast<std::size_t> (pad)];
+    const auto& sample = (*active)[static_cast<std::size_t> (pad)];
     if (sample.empty())
         return;
 
@@ -73,6 +118,8 @@ void Sampler::trigger (Pad pad, float velocity)
 
 void Sampler::render (HitQueue& queue, float* left, float* right, int numSamples)
 {
+    applyPendingSwap();
+
     HitEvent event;
     while (queue.pop (event))
         trigger (event.pad, event.velocity);
