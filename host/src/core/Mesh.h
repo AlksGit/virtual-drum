@@ -1,7 +1,7 @@
 #pragma once
 
-// Procedural meshes for the 3D kit (placeholders until real glTF models, see TASK-019).
-// All shapes are built around the +Z axis and placed with a model matrix.
+// Procedural meshes for the 3D kit. Shapes are built around the +Z axis, then placed with a
+// model matrix or merged with transformed().
 
 #include "Mat4.h"
 
@@ -37,6 +37,24 @@ Mesh makeCymbal (float radius, int segments);
 
 // Stick along +Z from z = 0 (grip) to z = length (tip), tapering towards the tip.
 Mesh makeStick (float length, float gripRadius, float tipRadius, int segments);
+
+// Surface of revolution around Z through a (radius, z) profile. Normals point to the left of
+// the profile direction in the (r, z) plane: outwards for a profile going up the outside.
+Mesh makeLathe (const std::vector<std::pair<float, float>>& profile, int segments);
+
+// Closed cylinder from point a to point b.
+Mesh makeCylinderBetween (Vec3 a, Vec3 b, float radius, int segments);
+
+// Ring around Z at height 0: circle of radius minorRadius swept at majorRadius.
+Mesh makeTorus (float majorRadius, float minorRadius, int majorSegments, int minorSegments);
+
+// Axis-aligned box centred on the origin.
+Mesh makeBox (Vec3 size);
+
+Mesh makeSphere (float radius, int rings, int segments);
+
+// Copy of `mesh` with positions and normals transformed by `transform`.
+Mesh transformed (const Mesh& mesh, const Mat4& transform);
 
 // Appends `source` to `target`.
 void append (Mesh& target, const Mesh& source);

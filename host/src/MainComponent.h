@@ -17,7 +17,8 @@ namespace vdrum
 // Top-level content of the main window: picks a data source, feeds the scene state and
 // hosts the 3D view.
 //
-// Command line: --fake [bpm] forces the simulated drummer, --port <path> a serial port.
+// Command line: --fake [bpm] forces the simulated drummer, --port <path> a serial port,
+// --view <degrees> sets the initial camera azimuth (0 = front of the kit, 180 = behind).
 // Without options the receiver is used when detected, the simulated drummer otherwise.
 // Keys: Up / Down change the tempo of the simulated drummer, M mutes the sound.
 class MainComponent final : public juce::Component,

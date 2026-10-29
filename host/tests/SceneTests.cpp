@@ -5,6 +5,7 @@
 #include "Mesh.h"
 #include "SceneState.h"
 
+#include <algorithm>
 #include <cmath>
 
 using namespace vdrum;
@@ -159,6 +160,54 @@ VDRUM_TEST (proceduralMeshesAreValid)
     checkMeshIsValid (makeDisc (0.2f, -0.1f, 32, false));
     checkMeshIsValid (makeCymbal (0.23f, 48));
     checkMeshIsValid (makeStick (0.42f, 0.0075f, 0.004f, 12));
+    checkMeshIsValid (makeTorus (0.2f, 0.01f, 32, 8));
+    checkMeshIsValid (makeBox ({ 0.1f, 0.2f, 0.3f }));
+    checkMeshIsValid (makeSphere (0.05f, 8, 16));
+    checkMeshIsValid (makeCylinderBetween ({ 0.1f, 0.2f, 0.0f }, { 0.4f, -0.1f, 0.6f }, 0.01f, 12));
+    checkMeshIsValid (transformed (makeTorus (0.2f, 0.01f, 32, 8),
+                                   Mat4::rotation (Quat::fromAxisAngle ({ 0, 1, 0 }, 0.7f)) * Mat4::scale ({ 1.0f, 2.0f, 0.5f })));
+}
+
+VDRUM_TEST (cylinderBetweenSpansItsEndPoints)
+{
+    const Vec3 a { 0.1f, 0.2f, 0.0f }, b { 0.4f, -0.1f, 0.6f };
+    const auto mesh = makeCylinderBetween (a, b, 0.01f, 12);
+    float minAlong = 1.0e9f, maxAlong = -1.0e9f;
+    const auto axis = normalise (b - a);
+    for (const auto& v : mesh.vertices)
+    {
+        const auto along = dot (Vec3 { v.px, v.py, v.pz } - a, axis);
+        minAlong = std::min (minAlong, along);
+        maxAlong = std::max (maxAlong, along);
+    }
+    CHECK (approx (minAlong, 0.0f, 1.0e-4f));
+    CHECK (approx (maxAlong, length (b - a), 1.0e-4f));
+}
+
+VDRUM_TEST (bassDrumClearsTheSnareAndTheFloorTom)
+{
+    // Distance from a point to the bass drum axis (along +X from the batter head).
+    const auto kickClearance = [] (Vec3 p)
+    {
+        const auto c = KitLayout::kKickBatterCentre;
+        const auto x = std::clamp (p.x, c.x, c.x + KitLayout::kKickDepth);
+        return length (p - Vec3 { x, c.y, c.z }) - KitLayout::kKickRadius;
+    };
+
+    for (const auto pad : { Pad::snare, Pad::floorTom })
+    {
+        const auto placement = KitLayout::placement (pad);
+        const auto transform = Mat4::translation (placement.strikeCentre) * Mat4::alignZ (placement.surfaceNormal);
+        for (int i = 0; i < 32; ++i)
+        {
+            const auto angle = 2.0f * kPi * static_cast<float> (i) / 32.0f;
+            for (const auto z : { 0.0f, -0.5f * placement.depth, -placement.depth })
+            {
+                const auto rim = transform.transformPoint ({ placement.radius * std::cos (angle), placement.radius * std::sin (angle), z });
+                CHECK (kickClearance (rim) > 0.02f);
+            }
+        }
+    }
 }
 
 VDRUM_TEST (sceneStateRecordsHitsOnTheAimedPad)

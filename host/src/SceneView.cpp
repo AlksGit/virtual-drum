@@ -7,10 +7,10 @@ namespace
 {
 
 // Camera orbits around the middle of the kit. Default: behind and above the player.
-constexpr Vec3 kCameraTarget { 0.55f, 0.0f, 0.68f };
-constexpr float kDefaultAzimuth = degToRad (196.0f); // behind the player, slightly to the right
-constexpr float kDefaultElevation = degToRad (24.0f);
-constexpr float kDefaultDistance = 2.2f;
+constexpr Vec3 kCameraTarget { 0.52f, -0.02f, 0.60f };
+constexpr float kDefaultAzimuth = degToRad (214.0f); // three-quarter view from behind, on the right
+constexpr float kDefaultElevation = degToRad (27.0f);
+constexpr float kDefaultDistance = 2.35f;
 constexpr float kMinElevation = degToRad (3.0f);
 constexpr float kMaxElevation = degToRad (85.0f);
 constexpr float kMinDistance = 0.8f;

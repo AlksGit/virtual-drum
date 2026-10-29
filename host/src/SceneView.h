@@ -25,6 +25,10 @@ public:
     // Frames rendered per second, measured on the GL thread.
     float getFramesPerSecond() const noexcept { return framesPerSecond; }
 
+    // Camera azimuth around the kit in degrees (0 = from the front of the kit, 180 = behind
+    // the player). Message thread.
+    void setCameraAzimuthDegrees (float degrees) { cameraAzimuth = degToRad (degrees); }
+
     // Text shown in the top-left corner (called on the message thread).
     void setOverlayText (const juce::String& text);
 
