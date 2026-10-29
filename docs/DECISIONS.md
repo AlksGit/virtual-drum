@@ -20,3 +20,8 @@ Format : date — décision — pourquoi — alternatives écartées.
 - **2026-10** — Algorithmes prototypés en Python sur enregistrements réels avant portage C.
 - **2026-10** — Dev sur deux machines (PC puis Mac). — Repo git comme seul lien, version NCS figée
   et identique, LF partout, outils indépendants de l'OS (port série auto-détecté, `pathlib`).
+- **2026-10** — Host : JUCE récupéré par CMake `FetchContent`, figé sur le tag **9.0.4** ; rendu 3D
+  en OpenGL 4.1 Core. — Une seule ligne à changer pour monter de version, même version garantie sur
+  PC et Mac, pas d'étape `git submodule`. 4.1 Core est le maximum supporté par macOS.
+  Écartés : sous-module git (étape manuelle de plus, facile à désynchroniser) ; Projucer (projets
+  générés par OS, moins adapté au multi-machine).
