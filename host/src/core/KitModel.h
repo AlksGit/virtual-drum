@@ -43,8 +43,11 @@ struct KitPart
     int mesh = -1;      // index into KitModel::meshes
     Material material;
     Mat4 model;
-    int pad = -1;       // pad whose hits light this part, -1 for none
-    Vec3 flashColour;   // emission at full velocity (linear RGB)
+    int pad = -1;       // pad whose hits animate this part, -1 for none
+    Vec3 flashColour;   // emission at full velocity (linear RGB), zero for no flash
+    bool wobbles = false; // swings around `pivot` after a hit (cymbals and what rides on them)
+    Vec3 pivot;         // world position of the swing centre
+    float wobbleAmount = 1.0f;
 };
 
 struct KitModel

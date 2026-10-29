@@ -52,6 +52,7 @@ cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 "Virtual Drum.exe" --fake 120      # force the simulated drummer, at 120 bpm
 "Virtual Drum.exe" --port COM5     # force a serial port
 "Virtual Drum.exe" --view 20       # start with the camera in front of the kit (degrees)
+"Virtual Drum.exe" --no-audio      # no sound output
 open "Virtual Drum.app" --args --fake 120   # macOS
 ```
 In the 3D view: drag to orbit, mouse wheel to zoom, double-click to reset the camera.
@@ -87,7 +88,8 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
 - `src/Main.cpp` — application and main window
 - `src/MainComponent.*` — top-level content
 - `src/SceneView.*` — 3D view component: camera, overlay (renders on JUCE's GL thread)
-- `src/SceneRenderer.*`, `src/Shaders.h` — shadow map, PBR scene in HDR, tone mapping
+- `src/SceneRenderer.*`, `src/Shaders.h` — shadow map, PBR scene in HDR, bloom, tone mapping;
+  hits light the pads, send a ring across drum heads and make cymbals swing
 - `src/AudioEngine.*` — audio output (JUCE device manager) playing the sampler
 - `src/core/` — no JUCE dependency, unit tested:
   - `Packets.*` — C++ view of `protocol.h`, encode / decode

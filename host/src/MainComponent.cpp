@@ -15,10 +15,19 @@ MainComponent::MainComponent (const juce::String& commandLine)
     startSource (commandLine);
     startTimerHz (4);
 
-    // Opening the audio device can take a second or two: do it once the window is shown.
+    if (commandLine.contains ("--no-audio"))
+    {
+        audioStatus = "Audio off (--no-audio)";
+        return;
+    }
+
+    // Opening the audio device blocks the message thread for ~1.5 s (driver types are tried in
+    // turn), and JUCE needs that thread to paint the overlay of each GL frame. Open it once the
+    // first frames are on screen: the scene then pauses briefly instead of starting black.
+    // (WASAPI needs COM initialised on the calling thread, so it stays on the message thread.)
     audioStatus = "Opening audio...";
     juce::Component::SafePointer<MainComponent> safeThis (this);
-    juce::MessageManager::callAsync ([safeThis]
+    juce::Timer::callAfterDelay (1500, [safeThis]
     {
         if (safeThis == nullptr)
             return;

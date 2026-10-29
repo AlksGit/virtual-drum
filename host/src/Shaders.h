@@ -45,6 +45,9 @@ uniform float clearcoat;
 uniform int pattern;
 uniform float patternScale;
 uniform vec3 emissive;
+uniform float hitAge;      // seconds since the last hit on this part's pad (large if none)
+uniform float hitStrength; // velocity of that hit, 0..1
+uniform vec3 rippleColour; // colour of the ring that runs across a struck head
 
 uniform vec3 cameraPosition;
 uniform vec3 spotPosition;
@@ -180,6 +183,7 @@ void main()
     float rough = roughness;
     float metal = metallic;
     float coat = clearcoat;
+    vec3 extraEmission = vec3 (0.0);
 
     if (pattern == 1) // cymbal: lathe grooves, hammer marks, brighter bell
     {
@@ -211,6 +215,11 @@ void main()
         float r = length (localPosition.xy) / patternScale;
         albedo *= 0.95 + 0.07 * valueNoise (localPosition * 260.0);
         albedo *= mix (1.0, 0.55, smoothstep (0.90, 0.95, r));
+
+        // Ring of light running from the centre to the rim after a hit.
+        float front = hitAge * 3.2;
+        float t = (r - front) / 0.07;
+        extraEmission = rippleColour * (2.2 * hitStrength * exp (-t * t) * exp (-hitAge * 4.0));
     }
     else if (pattern == 4) // wood grain along the stick
     {
@@ -268,7 +277,7 @@ void main()
                + coat * (fc * environment (reflected, 0.04) + coatSpecular * spotRadiance * max (dot (n, l), 0.0));
     }
 
-    fragColour = vec4 (colour + emissive, 1.0);
+    fragColour = vec4 (colour + emissive + extraEmission, 1.0);
 }
 )";
 
@@ -288,6 +297,77 @@ inline const char* const kShadowFragment = R"(#version 410 core
 void main() {}
 )";
 
+// --- Bloom: a pyramid of downsampled, blurred copies of the bright parts -----------------
+// (13-tap downsample and 3x3 tent upsample, as in Jimenez, "Next generation post processing
+// in Call of Duty: Advanced Warfare", 2014.)
+
+inline const char* const kBloomDownsampleFragment = R"(#version 410 core
+uniform sampler2D source;
+uniform vec2 sourceTexel;  // 1 / size of the source texture
+uniform vec2 uvScale;      // part of the source covered by the view (first pass only)
+uniform vec2 targetSize;
+uniform int firstPass;
+uniform float threshold;
+
+out vec4 fragColour;
+
+// uv covers the view (0..1); the offset is in source texels.
+vec3 fetch (vec2 uv, vec2 offset)
+{
+    return texture (source, uv * uvScale + offset * sourceTexel).rgb;
+}
+
+// Keeps what is brighter than the threshold, with a soft knee to avoid hard edges.
+vec3 brightPart (vec3 c)
+{
+    float brightness = max (c.r, max (c.g, c.b));
+    float knee = 0.5 * threshold;
+    float soft = clamp (brightness - threshold + knee, 0.0, 2.0 * knee);
+    soft = soft * soft / (4.0 * knee + 1.0e-5);
+    return c * max (soft, brightness - threshold) / max (brightness, 1.0e-5);
+}
+
+void main()
+{
+    vec2 uv = gl_FragCoord.xy / targetSize;
+    vec3 a = fetch (uv, vec2 (-2.0, 2.0)), b = fetch (uv, vec2 (0.0, 2.0)), c = fetch (uv, vec2 (2.0, 2.0));
+    vec3 d = fetch (uv, vec2 (-2.0, 0.0)), e = fetch (uv, vec2 (0.0, 0.0)), f = fetch (uv, vec2 (2.0, 0.0));
+    vec3 g = fetch (uv, vec2 (-2.0, -2.0)), h = fetch (uv, vec2 (0.0, -2.0)), i = fetch (uv, vec2 (2.0, -2.0));
+    vec3 j = fetch (uv, vec2 (-1.0, 1.0)), k = fetch (uv, vec2 (1.0, 1.0));
+    vec3 l = fetch (uv, vec2 (-1.0, -1.0)), m = fetch (uv, vec2 (1.0, -1.0));
+
+    vec3 colour = e * 0.125 + (a + c + g + i) * 0.03125 + (b + d + f + h) * 0.0625 + (j + k + l + m) * 0.125;
+    if (firstPass == 1)
+        colour = brightPart (colour);
+    fragColour = vec4 (max (colour, vec3 (0.0)), 1.0);
+}
+)";
+
+inline const char* const kBloomUpsampleFragment = R"(#version 410 core
+uniform sampler2D source;
+uniform vec2 sourceTexel;
+uniform vec2 targetSize;
+uniform float radius;
+
+out vec4 fragColour;
+
+void main()
+{
+    vec2 uv = gl_FragCoord.xy / targetSize;
+    vec2 t = sourceTexel * radius;
+    vec3 colour = texture (source, uv + t * vec2 (-1.0, 1.0)).rgb
+                + texture (source, uv + t * vec2 (0.0, 1.0)).rgb * 2.0
+                + texture (source, uv + t * vec2 (1.0, 1.0)).rgb
+                + texture (source, uv + t * vec2 (-1.0, 0.0)).rgb * 2.0
+                + texture (source, uv).rgb * 4.0
+                + texture (source, uv + t * vec2 (1.0, 0.0)).rgb * 2.0
+                + texture (source, uv + t * vec2 (-1.0, -1.0)).rgb
+                + texture (source, uv + t * vec2 (0.0, -1.0)).rgb * 2.0
+                + texture (source, uv + t * vec2 (1.0, -1.0)).rgb;
+    fragColour = vec4 (colour / 16.0, 1.0);
+}
+)";
+
 // --- Final pass: exposure, filmic tone mapping, vignette, dithering ----------------------
 
 inline const char* const kFullscreenVertex = R"(#version 410 core
@@ -301,9 +381,11 @@ void main()
 
 inline const char* const kTonemapFragment = R"(#version 410 core
 uniform sampler2D hdrImage;
-uniform vec2 resolution; // size of the view in pixels
-uniform vec2 imageScale; // fraction of the HDR texture covered by the view
+uniform sampler2D bloomImage; // half resolution, covers the view exactly
+uniform vec2 resolution;      // size of the view in pixels
+uniform vec2 imageScale;      // fraction of the HDR texture covered by the view
 uniform float exposure;
+uniform float bloomStrength;
 
 out vec4 fragColour;
 
@@ -315,7 +397,8 @@ vec3 acesFilm (vec3 x)
 void main()
 {
     vec2 uv = gl_FragCoord.xy / resolution;
-    vec3 colour = acesFilm (texture (hdrImage, uv * imageScale).rgb * exposure);
+    vec3 hdr = texture (hdrImage, uv * imageScale).rgb + bloomStrength * texture (bloomImage, uv).rgb;
+    vec3 colour = acesFilm (hdr * exposure);
 
     float vignette = (1.0 - smoothstep (0.30, 1.05, length ((uv - 0.5) * vec2 (1.0, 0.8)) * 1.3));
     colour *= mix (0.72, 1.0, vignette);
