@@ -36,3 +36,7 @@ jobs:
       - name: Build
         working-directory: host
         run: cmake --build build --config Release --parallel
+
+      - name: Unit tests
+        working-directory: host
+        run: ctest --test-dir build -C Release --output-on-failure

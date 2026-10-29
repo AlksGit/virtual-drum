@@ -20,6 +20,61 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(JUCE)
 
+# --- Core library: protocol, data sources, serial I/O. No JUCE dependency, unit tested. ---
+add_library(vdrum_core STATIC
+    src/core/Packets.cpp
+    src/core/FrameParser.cpp
+    src/core/SerialPort.cpp
+    src/core/SerialDataSource.cpp)
+
+if(WIN32)
+    target_sources(vdrum_core PRIVATE src/core/SerialPort_windows.cpp)
+    target_link_libraries(vdrum_core PRIVATE setupapi)
+else()
+    target_sources(vdrum_core PRIVATE src/core/SerialPort_posix.cpp)
+endif()
+
+if(APPLE)
+    target_link_libraries(vdrum_core PRIVATE "-framework IOKit" "-framework CoreFoundation")
+endif()
+
+find_package(Threads REQUIRED)
+
+target_include_directories(vdrum_core
+    PUBLIC
+        src/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/../firmware/common)
+
+target_link_libraries(vdrum_core
+    PUBLIC
+        Threads::Threads
+    PRIVATE
+        juce::juce_recommended_warning_flags)
+
+# --- Unit tests (run with ctest) ---
+enable_testing()
+
+add_executable(vdrum_tests
+    tests/TestMain.cpp
+    tests/ProtocolTests.cpp
+    tests/SerialTests.cpp)
+
+target_link_libraries(vdrum_tests
+    PRIVATE
+        vdrum_core
+        juce::juce_recommended_warning_flags)
+
+add_test(NAME vdrum_tests COMMAND vdrum_tests)
+
+# --- Command-line monitor: lists ports, prints received frames (hardware bring-up) ---
+add_executable(vdrum_monitor src/tools/Monitor.cpp)
+
+target_link_libraries(vdrum_monitor
+    PRIVATE
+        vdrum_core
+        juce::juce_recommended_warning_flags)
+
+# --- GUI app ---
 juce_add_gui_app(VirtualDrum
     PRODUCT_NAME      "Virtual Drum"
     COMPANY_NAME      "Virtual Drum"
@@ -42,6 +97,7 @@ target_compile_definitions(VirtualDrum
 
 target_link_libraries(VirtualDrum
     PRIVATE
+        vdrum_core
         juce::juce_gui_extra
         juce::juce_opengl
     PUBLIC
