@@ -1,0 +1,7 @@
+/* CDC ACM function on the nRF52840 USB device controller. */
+&zephyr_udc0 {
+	cdc_acm_uart0: cdc_acm_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "Virtual Drum Receiver";
+	};
+};
