@@ -38,7 +38,8 @@ int main(void)
 
 		if (tick % 4 == 0) {
 			/* Battery measurement needs the divider ratio (docs/HARDWARE.md): 0 = unknown. */
-			radio_send_status(0);
+			imu_get_stats(&imu);
+			radio_send_status(0, imu.fifo_overruns);
 		}
 
 		imu_get_stats(&imu);

@@ -24,7 +24,7 @@ import numpy as np
 ODR_HZ = 1666.0
 GYRO_LSB_PER_DPS = 1.0 / 0.070     # +-2000 dps: 70 mdps/LSB (docs/HARDWARE.md)
 ACCEL_LSB_PER_G = 1.0 / 0.000488   # +-16 g: 0.488 mg/LSB
-INT16_MAX = 32767
+from vdrum.protocol import INT16_MAX  # noqa: E402,F401  (re-exported for the tests)
 SENSOR_RADIUS_M = 0.04             # sensor distance from the wrist pivot
 G = 9.81
 

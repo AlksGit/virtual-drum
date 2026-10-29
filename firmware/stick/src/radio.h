@@ -15,13 +15,15 @@ int radio_start(uint8_t stick_id);
 void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32_t first_time_us);
 
 /* Sends a STATUS packet (thread context). */
-void radio_send_status(uint16_t vbat_mv);
+/* imu_overruns: IMU FIFO overrun count, reported in STATUS (protocol v4). */
+void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns);
 
 struct radio_stats {
 	uint32_t packets_queued;
 	uint32_t packets_sent;
 	uint32_t packets_failed;  /* no ACK after all retransmits: lost */
 	uint32_t queue_full;      /* not queued: the radio could not keep up */
+	uint32_t retries;         /* extra attempts (approximate, see radio.c) */
 };
 
 void radio_get_stats(struct radio_stats *stats);

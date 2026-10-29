@@ -11,7 +11,17 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Union
 
-PROTO_VERSION = 3
+PROTO_VERSION = 4
+
+INT16_MIN = -32768
+INT16_MAX = 32767
+
+
+def saturated(values):
+    """True where a raw sensor value sits at the end of the int16 range: the sensor clips there
+    at its configured full scale. Works on ints and numpy arrays. The single definition used by
+    every tool (plots, detection)."""
+    return (values >= INT16_MAX) | (values <= INT16_MIN)
 
 PKT_RAW = 0x01
 PKT_HIT = 0x02
@@ -39,7 +49,7 @@ _RAW_FIXED = struct.Struct("<BBHIB")
 _SAMPLE = struct.Struct("<6h")
 _HIT = struct.Struct("<BBHIB4hB")
 _ORIENT = struct.Struct("<BBHI4h")
-_STATUS = struct.Struct("<BBHH3hB")
+_STATUS = struct.Struct("<BBHH3hB4H")
 _FRAME_HEADER = struct.Struct("<BBBIb")
 
 RAW_COUNT_OFFSET = 8  # header(4) + t0_us(4)
@@ -49,12 +59,23 @@ def raw_packet_size(count: int) -> int:
     return _RAW_FIXED.size + count * _SAMPLE.size
 
 
-def crc8(data: bytes, crc: int = CRC8_INIT) -> int:
-    """CRC-8/SMBUS: poly 0x07, init 0x00, no reflection, no final xor."""
+def crc8_bitwise(data: bytes, crc: int = CRC8_INIT) -> int:
+    """CRC-8/SMBUS: poly 0x07, init 0x00, no reflection, no final xor (reference algorithm)."""
     for byte in data:
         crc ^= byte
         for _ in range(8):
             crc = ((crc << 1) ^ CRC8_POLY) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+    return crc
+
+
+_CRC8_TABLE = bytes(crc8_bitwise(bytes([i])) for i in range(256))
+
+
+def crc8(data: bytes, crc: int = CRC8_INIT) -> int:
+    """Same CRC, one table lookup per byte (about 20x faster, the logger's main cost)."""
+    table = _CRC8_TABLE
+    for byte in data:
+        crc = table[crc ^ byte]
     return crc
 
 
@@ -104,6 +125,11 @@ class StatusPacket:
     vbat_mv: int
     gyro_bias: tuple
     fw_version: int
+    # Cumulative counters since boot, wrapping at 2**16 (protocol v4).
+    tx_retries: int = 0
+    tx_failed: int = 0
+    tx_queue_full: int = 0
+    imu_overruns: int = 0
 
 
 Packet = Union[RawPacket, HitPacket, OrientPacket, StatusPacket]
@@ -165,8 +191,8 @@ def decode_packet(data: bytes) -> Optional[Packet]:
         ptype, stick, seq, t_us, qw, qx, qy, qz = _ORIENT.unpack(data)
         return OrientPacket(Header(ptype, stick, seq), t_us, (qw, qx, qy, qz))
 
-    ptype, stick, seq, vbat, bx, by, bz, fw = _STATUS.unpack(data)
-    return StatusPacket(Header(ptype, stick, seq), vbat, (bx, by, bz), fw)
+    ptype, stick, seq, vbat, bx, by, bz, fw, retries, failed, full, overruns = _STATUS.unpack(data)
+    return StatusPacket(Header(ptype, stick, seq), vbat, (bx, by, bz), fw, retries, failed, full, overruns)
 
 
 def encode_packet(packet: Packet) -> bytes:
@@ -185,7 +211,8 @@ def encode_packet(packet: Packet) -> bytes:
     if isinstance(packet, OrientPacket):
         return _ORIENT.pack(PKT_ORIENT, h.stick_id, h.seq, packet.t_us, *packet.quat)
     if isinstance(packet, StatusPacket):
-        return _STATUS.pack(PKT_STATUS, h.stick_id, h.seq, packet.vbat_mv, *packet.gyro_bias, packet.fw_version)
+        return _STATUS.pack(PKT_STATUS, h.stick_id, h.seq, packet.vbat_mv, *packet.gyro_bias, packet.fw_version,
+                            packet.tx_retries, packet.tx_failed, packet.tx_queue_full, packet.imu_overruns)
     raise TypeError(f"not a packet: {packet!r}")
 
 

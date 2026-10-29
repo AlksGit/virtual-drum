@@ -87,3 +87,28 @@ def test_cli_runs_on_a_logger_csv(tmp_path, capsys):
     assert detect_hits.main(["--csv", str(writer.imu_path), "--stick", "0"]) == 0
     lines = [line for line in capsys.readouterr().out.splitlines() if line and not line.startswith("time_s")]
     assert abs(len(lines) - len(session.hits)) <= 1
+
+
+def test_a_gap_in_the_recording_does_not_inflate_the_slope():
+    detector = HitDetector()
+    detector.process(0.0, 0.0, False)
+    detector.process(0.0006, 10.0, False)
+    # 8 samples lost: the next sample is 5.4 ms later, much faster; slope across the gap ignored.
+    detector.process(0.0060, 900.0, False)
+    d = None
+    t = 0.0066
+    for rate in (950.0, 1000.0, 100.0):
+        d = detector.process(t, rate, False) or d
+        t += 0.0006
+    assert d is not None
+    assert d.max_accel_dps2 < 50.0 / 0.0006 * 1.01
+
+
+def test_scoring_counts_each_fake_trigger_once():
+    from detection.detector import Detection
+    from detection.imu_sim import Hit
+
+    hits = [Hit(1.0, 1000.0, 0.5)]
+    detections = [Detection(1.001, 1000.0, 1e5, False, 0.5), Detection(2.0, 300.0, 1e4, False, 0.1)]
+    s = score(hits, detections, fakes=[1.98, 2.0, 2.02])
+    assert s.matched == 1 and s.false_positives == 1 and s.fake_triggers == 1

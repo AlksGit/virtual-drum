@@ -113,6 +113,10 @@ VDRUM_TEST (everyPacketTypeRoundTrips)
     status.vbatMv = 3712;
     status.gyroBias = { -3, 0, 12 };
     status.fwVersion = 4;
+    status.txRetries = 65535;
+    status.txFailed = 2;
+    status.txQueueFull = 3;
+    status.imuOverruns = 4;
 
     HitPacket hit;
     hit.header = { PKT_HIT, 1, 8 };

@@ -42,7 +42,8 @@ IMU_COLUMNS = ["rx_time_us", "rssi", "stick_id", "seq", "t0_us", "index", "t_us"
                "ax", "ay", "az", "gx", "gy", "gz"]
 EVENT_COLUMNS = ["rx_time_us", "rssi", "stick_id", "seq", "type", "t_us",
                  "velocity", "flags", "qw", "qx", "qy", "qz", "vbat_mv",
-                 "bias_x", "bias_y", "bias_z", "fw_version"]
+                 "bias_x", "bias_y", "bias_z", "fw_version",
+                 "tx_retries", "tx_failed", "tx_queue_full", "imu_overruns"]
 
 
 class SessionWriter:
@@ -70,7 +71,10 @@ class SessionWriter:
 
         if stick in self._last_seq:
             gap = (header.seq - self._last_seq[stick] - 1) & 0xFFFF
-            self.lost[stick] = self.lost.get(stick, 0) + gap
+            # A step back (duplicate, reordered packet, stick reboot) wraps to a huge gap:
+            # not a loss. Real gaps that large would mean ~2.5 min without any packet.
+            if gap < 0x8000:
+                self.lost[stick] = self.lost.get(stick, 0) + gap
         self._last_seq[stick] = header.seq
 
         if isinstance(packet, RawPacket):
@@ -91,7 +95,9 @@ class SessionWriter:
                        qw=packet.quat[0], qx=packet.quat[1], qy=packet.quat[2], qz=packet.quat[3])
         elif isinstance(packet, StatusPacket):
             row.update(type="STATUS", vbat_mv=packet.vbat_mv, bias_x=packet.gyro_bias[0],
-                       bias_y=packet.gyro_bias[1], bias_z=packet.gyro_bias[2], fw_version=packet.fw_version)
+                       bias_y=packet.gyro_bias[1], bias_z=packet.gyro_bias[2], fw_version=packet.fw_version,
+                       tx_retries=packet.tx_retries, tx_failed=packet.tx_failed,
+                       tx_queue_full=packet.tx_queue_full, imu_overruns=packet.imu_overruns)
         self._events.writerow([row[c] for c in EVENT_COLUMNS])
 
     def close(self) -> None:

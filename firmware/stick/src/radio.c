@@ -21,14 +21,17 @@
 
 BUILD_ASSERT(CONFIG_ESB_MAX_PAYLOAD_LENGTH >= VDRUM_ESB_MIN_PAYLOAD_CAPACITY,
 	     "CONFIG_ESB_MAX_PAYLOAD_LENGTH too small for RAW packets");
+BUILD_ASSERT(VDRUM_ESB_RETRANSMIT_DELAY_US(0) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US &&
+		     VDRUM_ESB_RETRANSMIT_DELAY_US(1) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US,
+	     "esb_init rejects retransmit delays below 435 us");
 
-#define FIRMWARE_VERSION 1
+#define FIRMWARE_VERSION 2
 
 static uint8_t stick;
 static uint16_t next_seq;
 static struct k_spinlock seq_lock;
 
-static atomic_t queued, sent, failed, full;
+static atomic_t queued, sent, failed, full, retries;
 
 /* RAW packets come from the IMU thread, STATUS from the main thread: one writer at a time. */
 static K_MUTEX_DEFINE(write_lock);
@@ -40,11 +43,16 @@ static uint32_t raw_first_time;
 static void esb_event(struct esb_evt const *event)
 {
 	switch (event->evt_id) {
+	/* One event may stand for several packets (esb_evt_irq_handler merges interrupt flags):
+	 * sent and retries are approximate, failed is exact enough for loss statistics.
+	 */
 	case ESB_EVENT_TX_SUCCESS:
 		atomic_inc(&sent);
+		atomic_add(&retries, (atomic_val_t)(event->tx_attempts > 0 ? event->tx_attempts - 1 : 0));
 		break;
 	case ESB_EVENT_TX_FAILED:
 		atomic_inc(&failed);
+		atomic_add(&retries, (atomic_val_t)(event->tx_attempts > 0 ? event->tx_attempts - 1 : 0));
 		(void)esb_pop_tx();
 		(void)esb_start_tx(); /* -ENODATA when nothing else is queued */
 		break;
@@ -102,6 +110,7 @@ int radio_start(uint8_t stick_id)
 	config.retransmit_delay = VDRUM_ESB_RETRANSMIT_DELAY_US(stick_id);
 	config.retransmit_count = VDRUM_ESB_RETRANSMIT_COUNT;
 	config.tx_mode = ESB_TXMODE_AUTO;
+	config.use_fast_ramp_up = VDRUM_ESB_FAST_RAMP_UP;
 
 	err = esb_init(&config);
 	err = err ? err : esb_set_rf_channel(VDRUM_ESB_RF_CHANNEL);
@@ -111,8 +120,32 @@ int radio_start(uint8_t stick_id)
 	return err;
 }
 
+static void send_raw(void)
+{
+	raw.hdr.type = PKT_RAW;
+	raw.hdr.stick_id = stick;
+	raw.hdr.seq = take_seq();
+	raw.t0_us = raw_first_time;
+	send_payload(&raw, PKT_RAW_SIZE(raw.n));
+	raw.n = 0;
+}
+
 void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32_t first_time_us)
 {
+	/* A RAW packet holds consecutive samples at t0 + i / ODR. If this batch does not continue
+	 * the partial packet (time base resynchronised, samples skipped), send the partial packet
+	 * first: the protocol allows packets of fewer than RAW_MAX_SAMPLES samples. Half a period
+	 * of tolerance lets the small drift corrections through.
+	 */
+	if (raw.n > 0) {
+		const uint32_t expected = raw_first_time + raw.n * IMU_SAMPLE_PERIOD_US;
+		const int32_t error = (int32_t)(first_time_us - expected);
+
+		if (error > (int32_t)(IMU_SAMPLE_PERIOD_US / 2) || error < -(int32_t)(IMU_SAMPLE_PERIOD_US / 2)) {
+			send_raw();
+		}
+	}
+
 	for (uint32_t i = 0; i < count; i++) {
 		if (raw.n == 0) {
 			raw_first_time = first_time_us + i * IMU_SAMPLE_PERIOD_US;
@@ -120,23 +153,22 @@ void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32
 		raw.samples[raw.n++] = samples[i];
 
 		if (raw.n == RAW_MAX_SAMPLES) {
-			raw.hdr.type = PKT_RAW;
-			raw.hdr.stick_id = stick;
-			raw.hdr.seq = take_seq();
-			raw.t0_us = raw_first_time;
-			send_payload(&raw, PKT_RAW_SIZE(raw.n));
-			raw.n = 0;
+			send_raw();
 		}
 	}
 }
 
-void radio_send_status(uint16_t vbat_mv)
+void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns)
 {
 	struct pkt_status status = {
 		.hdr = { .type = PKT_STATUS, .stick_id = stick, .seq = take_seq() },
 		.vbat_mv = vbat_mv,
 		.gyro_bias = { 0, 0, 0 }, /* bias calibration comes with phase 2 */
 		.fw_version = FIRMWARE_VERSION,
+		.tx_retries = (uint16_t)atomic_get(&retries),
+		.tx_failed = (uint16_t)atomic_get(&failed),
+		.tx_queue_full = (uint16_t)atomic_get(&full),
+		.imu_overruns = (uint16_t)imu_overruns,
 	};
 
 	send_payload(&status, sizeof(status));
@@ -148,4 +180,5 @@ void radio_get_stats(struct radio_stats *stats)
 	stats->packets_sent = (uint32_t)atomic_get(&sent);
 	stats->packets_failed = (uint32_t)atomic_get(&failed);
 	stats->queue_full = (uint32_t)atomic_get(&full);
+	stats->retries = (uint32_t)atomic_get(&retries);
 }

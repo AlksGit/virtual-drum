@@ -27,7 +27,9 @@ python tools/plot_session.py recordings/session_<stamp>_imu.csv --out a.png
 ```
 Accelerometer and gyroscope per stick in raw counts, with the int16 full-scale lines,
 saturated samples marked and lost packets shaded. Prints, per stick: received sample rate,
-packets lost and saturated samples. (Conversion to g and deg/s waits for the sensitivities to
+packets lost and saturated samples. Keep `session_<stamp>_events.csv` next to the IMU file:
+STATUS packets share the seq counter with RAW packets, and the events file tells them apart
+from real losses. Losses are counted correctly across the seq wrap (~5 min). (Conversion to g and deg/s waits for the sensitivities to
 be checked in the datasheet, TASK-004.)
 
 ## fetch_kits.py — free sampled kits for the app

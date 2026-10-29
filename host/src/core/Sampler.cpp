@@ -33,6 +33,9 @@ void Sampler::setSamples (SampleBank bank)
     for (auto& voice : voices)
         voice = {};
     *active = std::move (bank);
+    // An older change accepted before the device stopped would otherwise replace this bank on
+    // the first render() after the restart.
+    delete pending.exchange (nullptr);
 }
 
 bool Sampler::requestSamples (std::unique_ptr<SampleBank>& bank)
@@ -115,18 +118,21 @@ void Sampler::trigger (Pad pad, float velocity)
     if (sample.empty())
         return;
 
-    // Free voice, else steal the oldest one.
-    auto* target = &voices[0];
-    for (auto& voice : voices)
+    // Too many voices on this pad: release its oldest one (fades out instead of a hard cut).
+    Voice* released = nullptr;
+    if (activeVoiceCount (pad) >= kMaxVoicesPerPad)
     {
-        if (voice.sample == nullptr)
-        {
-            target = &voice;
-            break;
-        }
-        if (voice.age < target->age)
-            target = &voice;
+        Voice* oldest = nullptr;
+        for (auto& voice : voices)
+            if (voice.sample != nullptr && voice.release == 0 && voice.pad == pad
+                && (oldest == nullptr || voice.age < oldest->age))
+                oldest = &voice;
+        if (oldest != nullptr)
+            oldest->release = kReleaseSamples;
+        released = oldest;
     }
+
+    auto* target = findVoiceSlot (released); // never the voice just released: it must fade
 
     float left = 0.0f, right = 0.0f;
     padPan (pad, left, right);
@@ -137,6 +143,30 @@ void Sampler::trigger (Pad pad, float velocity)
     target->gainLeft = gain * left;
     target->gainRight = gain * right;
     target->age = ++triggerCounter;
+    target->pad = pad;
+    target->release = 0;
+}
+
+Sampler::Voice* Sampler::findVoiceSlot (const Voice* keep)
+{
+    // A free voice, else the oldest releasing one (already fading), else the oldest one;
+    // `keep` only as a last resort.
+    Voice* oldestReleasing = nullptr;
+    Voice* oldest = nullptr;
+    for (auto& voice : voices)
+    {
+        if (voice.sample == nullptr)
+            return &voice;
+        if (&voice == keep)
+            continue;
+        if (voice.release > 0 && (oldestReleasing == nullptr || voice.age < oldestReleasing->age))
+            oldestReleasing = &voice;
+        if (oldest == nullptr || voice.age < oldest->age)
+            oldest = &voice;
+    }
+    if (oldestReleasing != nullptr)
+        return oldestReleasing;
+    return oldest != nullptr ? oldest : &voices[0];
 }
 
 void Sampler::render (HitQueue& queue, float* left, float* right, int numSamples)
@@ -157,7 +187,27 @@ void Sampler::render (HitQueue& queue, float* left, float* right, int numSamples
 
         const auto& data = *voice.sample;
         const auto remaining = data.size() - voice.position;
-        const auto count = std::min (remaining, static_cast<std::size_t> (numSamples));
+        auto count = std::min (remaining, static_cast<std::size_t> (numSamples));
+
+        if (voice.release > 0)
+        {
+            // Linear fade to silence over the remaining release samples.
+            count = std::min (count, static_cast<std::size_t> (voice.release));
+            const auto step = 1.0f / static_cast<float> (kReleaseSamples);
+            auto level = static_cast<float> (voice.release) * step;
+            for (std::size_t i = 0; i < count; ++i)
+            {
+                level -= step;
+                const auto s = data[voice.position + i] * std::max (level, 0.0f);
+                left[i] += s * voice.gainLeft;
+                right[i] += s * voice.gainRight;
+            }
+            voice.release -= static_cast<int> (count);
+            voice.position += count;
+            if (voice.release <= 0 || voice.position >= data.size())
+                voice = {};
+            continue;
+        }
 
         for (std::size_t i = 0; i < count; ++i)
         {
@@ -181,6 +231,12 @@ void Sampler::render (HitQueue& queue, float* left, float* right, int numSamples
 int Sampler::activeVoiceCount() const noexcept
 {
     return static_cast<int> (std::count_if (voices.begin(), voices.end(), [] (const Voice& v) { return v.sample != nullptr; }));
+}
+
+int Sampler::activeVoiceCount (Pad pad) const noexcept
+{
+    return static_cast<int> (std::count_if (voices.begin(), voices.end(), [pad] (const Voice& v)
+                                            { return v.sample != nullptr && v.release == 0 && v.pad == pad; }));
 }
 
 } // namespace vdrum

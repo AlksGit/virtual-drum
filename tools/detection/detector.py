@@ -17,7 +17,9 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .imu_sim import GYRO_LSB_PER_DPS, INT16_MAX, ODR_HZ
+from vdrum.protocol import saturated as is_saturated
+
+from .imu_sim import GYRO_LSB_PER_DPS, ODR_HZ
 
 
 @dataclass
@@ -46,13 +48,20 @@ class HitDetector:
         self._max_accel = 0.0
         self._saturated = False
         self._previous = 0.0
+        self._previous_time = None
         self._refractory_until = -1.0
 
     def process(self, time_s: float, rate_dps: float, saturated: bool) -> Detection | None:
         """Feeds one sample; returns a Detection when a hit fires."""
         c = self.config
-        accel = (rate_dps - self._previous) * c.odr_hz
+        # Angular acceleration over the real time step: recordings have gaps (lost packets),
+        # where a fixed 1/odr step would overestimate the slope.
+        dt = 1.0 / c.odr_hz if self._previous_time is None else time_s - self._previous_time
+        accel = (rate_dps - self._previous) / dt if dt > 0 else 0.0
+        if dt > 2.5 / c.odr_hz:
+            accel = 0.0  # gap: the slope across it is unknown
         self._previous = rate_dps
+        self._previous_time = time_s
 
         if time_s < self._refractory_until:
             return None
@@ -113,11 +122,11 @@ def stroke_rate(gyro_counts: np.ndarray, axis: int = 1, other_axis: int | None =
     towards `other_axis`, so the rate is the norm in that plane, signed by the main axis.
     """
     main = gyro_counts[:, axis].astype(float) / GYRO_LSB_PER_DPS
-    saturated = np.abs(gyro_counts[:, axis].astype(int)) >= INT16_MAX - 1
+    saturated = is_saturated(gyro_counts[:, axis].astype(int))
     if other_axis is None:
         return sign * main, saturated
     other = gyro_counts[:, other_axis].astype(float) / GYRO_LSB_PER_DPS
-    saturated |= np.abs(gyro_counts[:, other_axis].astype(int)) >= INT16_MAX - 1
+    saturated |= is_saturated(gyro_counts[:, other_axis].astype(int))
     return sign * np.sign(main) * np.hypot(main, other), saturated
 
 

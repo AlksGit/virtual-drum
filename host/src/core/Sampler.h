@@ -31,7 +31,12 @@ using SampleBank = std::array<PadSound, kDrumKit.size()>;
 class Sampler
 {
 public:
-    static constexpr int kMaxVoices = 24;
+    // A pad keeps at most kMaxVoicesPerPad sounding voices: a new hit releases the oldest one
+    // with a short fade (kReleaseSamples, ~2 ms at 48 kHz) instead of cutting it, which clicks.
+    // kMaxVoices leaves room for every pad plus the voices still fading out.
+    static constexpr int kMaxVoices = 40;
+    static constexpr int kMaxVoicesPerPad = 4;
+    static constexpr int kReleaseSamples = 96;
 
     Sampler();
     ~Sampler();
@@ -39,7 +44,8 @@ public:
     Sampler (const Sampler&) = delete;
     Sampler& operator= (const Sampler&) = delete;
 
-    // Replaces the samples immediately. Only while rendering is stopped.
+    // Replaces the samples immediately, and drops a change still pending from requestSamples.
+    // Only while rendering is stopped.
     void setSamples (SampleBank bank);
 
     // Thread-safe kit change while rendering: the bank is swapped in at the start of the next
@@ -67,6 +73,7 @@ public:
     void render (HitQueue& queue, float* left, float* right, int numSamples);
 
     int activeVoiceCount() const noexcept;
+    int activeVoiceCount (Pad pad) const noexcept; // sounding, not releasing
 
 private:
     struct Voice
@@ -75,8 +82,12 @@ private:
         std::size_t position = 0;
         float gainLeft = 0.0f;
         float gainRight = 0.0f;
-        unsigned age = 0; // trigger order, to steal the oldest voice
+        unsigned age = 0;    // trigger order, to steal the oldest voice
+        Pad pad = Pad::snare;
+        int release = 0;     // samples left in the release fade, 0 = not releasing
     };
+
+    Voice* findVoiceSlot (const Voice* keep);
 
     void applyPendingSwap();
 

@@ -52,6 +52,17 @@ Source : pilote ST livré avec NCS v3.4.1 (`modules/hal/st/sensor/stmemsc/lsm6ds
 | ODR disponibles (extrait) | 1,66 kHz, 3,33 kHz, 6,66 kHz (accéléro et gyro) |
 | Taille de la FIFO | à vérifier dans la datasheet (non confirmé ici) |
 
+## À vérifier au premier démarrage sur carte (firmware baguette)
+Points relevés par la revue experte (TASK-029), non vérifiables sans matériel :
+- lecture en rafale de FIFO_DATA_OUT : comparer une lecture groupée et une lecture mot par mot
+  (retour d'adresse de 0x3F à 0x3E) ;
+- ODR réel de l'IMU contre l'horloge de la baguette sur 10 min : l'horodatage suit la dérive
+  par une correction proportionnelle (1/8 par lecture) ; au-delà de ~1 % d'écart, il faudra
+  estimer la vraie période ;
+- INT1 (seuil de FIFO) : confirmer qu'elle reste haute tant que la FIFO est au-dessus du seuil ;
+- STATUS v4 : compteurs de retransmissions, d'échecs et de débordements de FIFO à relever pendant
+  les mesures de TASK-012.
+
 ## Flash / debug
 - UF2 : double-tap sur reset → disque USB → copier `zephyr.uf2`.
 - Pas de sonde SWD requise. Si besoin de debug pas-à-pas : pads SWD au dos + J-Link / nRF DK.

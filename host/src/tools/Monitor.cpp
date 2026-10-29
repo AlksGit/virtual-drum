@@ -97,7 +97,9 @@ public:
             if (stick.hasSeq)
             {
                 const auto gap = static_cast<std::uint16_t> (header.seq - stick.lastSeq - 1);
-                stick.lost.fetch_add (gap, std::memory_order_relaxed);
+                // A step back (duplicate, reordered packet, stick reboot) is not a loss.
+                if (gap < 0x8000)
+                    stick.lost.fetch_add (gap, std::memory_order_relaxed);
             }
             stick.lastSeq = header.seq;
             stick.hasSeq = true;

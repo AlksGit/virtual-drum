@@ -7,6 +7,8 @@ Values are raw sensor counts (int16). A sample is saturated when an axis reaches
 the int16 range (the sensor clips there at its configured full scale). Conversion to g and
 deg/s needs the sensitivities of the configured ranges, checked in the datasheet (TASK-004).
 Also prints per-stick statistics: duration, sample rate, packets lost, saturated samples.
+Packet losses also need the session_<stamp>_events.csv next to the IMU file: STATUS packets take
+their seq from the same counter as RAW packets, so without it each STATUS looks like a loss.
 """
 
 from __future__ import annotations
@@ -19,8 +21,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-INT16_MIN = -32768
-INT16_MAX = 32767
+from vdrum.protocol import INT16_MAX, INT16_MIN, saturated  # noqa: E402  (one definition)
+
+RX_CLOCK_WRAP = 1 << 32  # receiver rx_time_us is a u32: loss accounting holds for 71 min
 ACCEL_AXES = ("ax", "ay", "az")
 GYRO_AXES = ("gx", "gy", "gz")
 
@@ -51,9 +54,17 @@ def load_session(path: Path) -> pd.DataFrame:
     return frame
 
 
+def load_events(imu_path: Path):
+    """The events CSV written next to an IMU CSV by logger.py, or None if absent."""
+    name = imu_path.name
+    if not name.endswith("_imu.csv"):
+        return None
+    events_path = imu_path.with_name(name[: -len("_imu.csv")] + "_events.csv")
+    return pd.read_csv(events_path) if events_path.exists() else None
+
+
 def saturated_mask(frame: pd.DataFrame, axes) -> np.ndarray:
-    values = frame[list(axes)].to_numpy()
-    return ((values >= INT16_MAX) | (values <= INT16_MIN)).any(axis=1)
+    return saturated(frame[list(axes)].to_numpy()).any(axis=1)
 
 
 def unwrap_time_s(t_us: pd.Series) -> np.ndarray:
@@ -64,10 +75,38 @@ def unwrap_time_s(t_us: pd.Series) -> np.ndarray:
     return (t - t[0]) / 1e6 if len(t) else t.astype(float)
 
 
-def stick_stats(frame: pd.DataFrame, stick_id: int) -> StickStats:
+def raw_packet_rows(data: pd.DataFrame) -> np.ndarray:
+    """Index (in data) of the first sample of each RAW packet: where seq changes. Only
+    consecutive repeats are merged, so the u16 seq can wrap (every ~5 min at 1.66 kHz)."""
+    seq = data["seq"].to_numpy(dtype=np.int64)
+    if len(seq) == 0:
+        return np.array([], dtype=np.int64)
+    return np.flatnonzero(np.r_[True, np.diff(seq) != 0])
+
+
+def packet_losses(data: pd.DataFrame, events=None, stick_id=None) -> np.ndarray:
+    """Packets lost between consecutive RAW packets of one stick. Seqs taken by other packet
+    types (STATUS...) received in between, found in the events CSV by arrival time, are not losses."""
+    rows = raw_packet_rows(data)
+    if len(rows) < 2:
+        return np.array([], dtype=np.int64)
+    seq = data["seq"].to_numpy(dtype=np.int64)[rows]
+    missing = (np.diff(seq) - 1) % 65536
+    if events is None or stick_id is None:
+        return missing
+
+    rx = data["rx_time_us"].to_numpy(dtype=np.int64)
+    origin = rx[0]
+    rx_rel = (rx[rows] - origin) % RX_CLOCK_WRAP
+    others = events[events["stick_id"] == stick_id]["rx_time_us"].to_numpy(dtype=np.int64)
+    others_rel = np.sort((others - origin) % RX_CLOCK_WRAP)
+    between = np.searchsorted(others_rel, rx_rel[1:]) - np.searchsorted(others_rel, rx_rel[:-1], side="right")
+    return np.maximum(missing - between, 0)
+
+
+def stick_stats(frame: pd.DataFrame, stick_id: int, events=None) -> StickStats:
     data = frame[frame["stick_id"] == stick_id]
-    seqs = data["seq"].drop_duplicates().to_numpy(dtype=np.int64)
-    gaps = (np.diff(seqs) - 1) % 65536 if len(seqs) > 1 else np.array([], dtype=np.int64)
+    gaps = packet_losses(data, events, stick_id)
     t = unwrap_time_s(data["t_us"])
     duration = float(t[-1]) if len(t) else 0.0
     return StickStats(
@@ -75,21 +114,21 @@ def stick_stats(frame: pd.DataFrame, stick_id: int) -> StickStats:
         samples=len(data),
         duration_s=duration,
         sample_rate_hz=(len(data) - 1) / duration if duration > 0 else 0.0,
-        packets=len(seqs),
+        packets=len(raw_packet_rows(data)),
         packets_lost=int(gaps.sum()),
         accel_saturated=int(saturated_mask(data, ACCEL_AXES).sum()),
         gyro_saturated=int(saturated_mask(data, GYRO_AXES).sum()),
     )
 
 
-def loss_spans(data: pd.DataFrame, t: np.ndarray) -> list:
-    """(start, end) times around each gap in seq: the samples lost in between."""
-    seq = data["seq"].to_numpy(dtype=np.int64)
-    gaps = np.nonzero(((np.diff(seq) % 65536) > 1))[0]
-    return [(t[i], t[i + 1]) for i in gaps]
+def loss_spans(data: pd.DataFrame, t: np.ndarray, events=None, stick_id=None) -> list:
+    """(start, end) times around each lost packet: from the last sample before to the first after."""
+    rows = raw_packet_rows(data)
+    losses = packet_losses(data, events, stick_id)
+    return [(t[rows[i + 1] - 1], t[rows[i + 1]]) for i in np.flatnonzero(losses > 0)]
 
 
-def plot(frame: pd.DataFrame, title: str):
+def plot(frame: pd.DataFrame, title: str, events=None):
     import matplotlib.pyplot as plt
 
     sticks = sorted(frame["stick_id"].unique())
@@ -107,7 +146,7 @@ def plot(frame: pd.DataFrame, title: str):
             if saturated.any():
                 ax.scatter(t[saturated], np.zeros(saturated.sum()) + INT16_MAX * 1.02, marker="v", s=14,
                            color="black", label=f"saturated ({int(saturated.sum())})", zorder=3)
-            for index, (start, end) in enumerate(loss_spans(data, t)):
+            for index, (start, end) in enumerate(loss_spans(data, t, events, stick_id)):
                 ax.axvspan(start, end, color="#e15759", alpha=0.25, label="packets lost" if index == 0 else None)
             ax.axhline(INT16_MAX, color="grey", linewidth=0.6, linestyle="--")
             ax.axhline(INT16_MIN, color="grey", linewidth=0.6, linestyle="--")
@@ -133,14 +172,17 @@ def main(argv=None) -> int:
         print(f"{path}: no samples")
         return 1
 
+    events = load_events(path)
+    if events is None:
+        print("no events CSV next to this file: STATUS packets will be counted as losses")
     for stick_id in sorted(frame["stick_id"].unique()):
-        print(stick_stats(frame, int(stick_id)).describe())
+        print(stick_stats(frame, int(stick_id), events).describe())
 
     if args.out:
         import matplotlib
         matplotlib.use("Agg")
 
-    figure = plot(frame, path.name)
+    figure = plot(frame, path.name, events)
     if args.out:
         figure.savefig(args.out, dpi=110)
         print(f"Wrote {args.out}")

@@ -1,4 +1,4 @@
-# Protocol — version 3 (brouillon, phase 0)
+# Protocol — version 4 (brouillon, phase 0)
 
 Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ parseur Python
 (`tools/`), et incrément de `PROTO_VERSION`.
@@ -48,7 +48,17 @@ gauche) et **élévation** (tangage, positif vers le haut). Le kit par défaut e
 `t_us` u32, `quat` i16×4 (w, x, y, z, Q14).
 
 ### 0x04 STATUS (~1 Hz)
-`vbat_mv` u16, `gyro_bias` i16×3, `fw_version` u8.
+`vbat_mv` u16, `gyro_bias` i16×3, `fw_version` u8, puis des compteurs cumulés depuis le
+démarrage, qui rebouclent à 2¹⁶ (comparer par différence modulo 2¹⁶) :
+| Champ | Type | Description |
+|---|---|---|
+| `tx_retries` | u16 | tentatives ESB supplémentaires (approché : ESB peut fusionner des événements) |
+| `tx_failed` | u16 | payloads abandonnés après toutes les retransmissions |
+| `tx_queue_full` | u16 | payloads non mis en file : la radio ne suivait pas |
+| `imu_overruns` | u16 | débordements de la FIFO de l'IMU (échantillons perdus avant lecture) |
+
+Taille : 21 octets. Les STATUS prennent leur `seq` dans le même compteur que les RAW : pour
+compter les pertes, il faut considérer les `seq` de tous les types de paquets.
 
 ## USB CDC (récepteur → PC)
 Trame : `0xA5 0x5A | len u8 | rx_time_us u32 | rssi i8 | payload ESB (len octets) | crc8`.
@@ -73,6 +83,7 @@ A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
 ```
 
 ## Historique
+- v4 (2026-10) : compteurs radio et IMU dans STATUS (21 octets), issus de la revue experte.
 - v3 (2026-10) : RAW jusqu'à 8 échantillons par paquet, payload ESB dynamique (105 o max).
 - v2 (2026-10) : convention de repère des quaternions (baguette → monde, axes du monde).
 - v1 (2026-10) : définition du crc8 et de sa couverture, ordre w, x, y, z des quaternions,

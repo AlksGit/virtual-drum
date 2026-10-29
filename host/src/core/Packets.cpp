@@ -213,6 +213,10 @@ std::optional<Packet> decodePacket (const std::uint8_t* data, std::size_t size)
             for (auto& bias : packet.gyroBias)
                 bias = reader.i16();
             packet.fwVersion = reader.u8();
+            packet.txRetries = reader.u16();
+            packet.txFailed = reader.u16();
+            packet.txQueueFull = reader.u16();
+            packet.imuOverruns = reader.u16();
             return packet;
         }
 
@@ -271,6 +275,10 @@ std::vector<std::uint8_t> encodePacket (const Packet& packet)
             for (const auto bias : p.gyroBias)
                 writer.i16 (bias);
             writer.u8 (p.fwVersion);
+            writer.u16 (p.txRetries);
+            writer.u16 (p.txFailed);
+            writer.u16 (p.txQueueFull);
+            writer.u16 (p.imuOverruns);
         }
     }, packet);
 

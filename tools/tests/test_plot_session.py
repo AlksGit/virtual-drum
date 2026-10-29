@@ -77,3 +77,40 @@ def test_loss_spans_cover_the_missing_packet(tmp_path):
     start, end = spans[0]
     assert start == pytest.approx(49 * 0.005 + 7 / 1600, abs=1e-4)
     assert end == pytest.approx(51 * 0.005, abs=1e-4)
+
+
+def write_long_session(tmp_path, lost_in_second_lap=(), status_every=208):
+    """One stick over two laps of the u16 seq, with STATUS packets taking seqs (as on the stick)."""
+    writer = logger.SessionWriter(tmp_path, "long", 1666.0)
+    lost = set(lost_in_second_lap)
+    sample = p.ImuSample(0, 0, 2048, 0, 0, 0)
+    t = 0
+    for seq_index in range(2 * 65536 + 100):
+        seq = seq_index & 0xFFFF
+        t += 4800
+        rx = t & 0xFFFFFFFF
+        if seq_index % status_every == 0:
+            packet = p.StatusPacket(p.Header(p.PKT_STATUS, 0, seq), 3700, (0, 0, 0), 2)
+        elif seq_index >= 65536 and seq_index in lost:
+            continue
+        else:
+            packet = p.RawPacket(p.Header(p.PKT_RAW, 0, seq), rx, (sample,))
+        writer.write(p.Frame(rx, -40, packet))
+    writer.close()
+    return writer.imu_path
+
+
+def test_losses_survive_the_seq_wrap_and_ignore_status_packets(tmp_path):
+    lost = [70000, 70001, 90000, 100000, 120000, 121000, 125000, 130003, 131000, 131001]  # none on a STATUS (multiple of 208)
+    path = write_long_session(tmp_path, lost_in_second_lap=lost)
+    frame = plot_session.load_session(path)
+    stats = plot_session.stick_stats(frame, 0, plot_session.load_events(path))
+    assert stats.packets_lost == len(lost)
+    expected_raw = 2 * 65536 + 100 - len(range(0, 2 * 65536 + 100, 208)) - len(lost)
+    assert stats.packets == expected_raw
+
+
+def test_without_events_status_packets_look_like_losses(tmp_path):
+    path = write_long_session(tmp_path, status_every=1000)
+    frame = plot_session.load_session(path)
+    assert plot_session.stick_stats(frame, 0).packets_lost == len(range(1000, 2 * 65536 + 100, 1000))
