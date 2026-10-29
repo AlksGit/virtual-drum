@@ -137,7 +137,7 @@ SampleBank KitLibrary::load (const KitEntry& kit, double sampleRate)
     if (kit.synthesised)
         return synthesiseKit (sampleRate, kit.synth);
 
-    auto bank = synthesiseKit (sampleRate, SynthKit::studio); // fallback for missing pads
+    SampleBank bank;
     const auto files = kit.folder.findChildFiles (juce::File::findFiles, false, "*.wav;*.aif;*.aiff;*.flac");
 
     for (std::size_t pad = 0; pad < kPadFileNames.size(); ++pad)
@@ -167,7 +167,11 @@ SampleBank KitLibrary::load (const KitEntry& kit, double sampleRate)
                 sound.layers.push_back (std::move (layer));
         }
         if (sound.layers.empty())
+        {
+            // Missing pad: the built-in Studio sound (only this one is synthesised).
+            bank[pad] = synthesiseDrum (static_cast<Pad> (pad), sampleRate, SynthKit::studio);
             continue;
+        }
 
         // Normalise the loudest layer like the built-in sounds; the others keep their level
         // relative to it, which carries the dynamics of multi-sampled kits.

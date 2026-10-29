@@ -367,3 +367,60 @@ VDRUM_TEST (kitFileNamesGiveThePadLayer)
     CHECK (padLayerFromStem ("floortomv2", "floortom") == 2);
     CHECK (padLayerFromStem ("sn", "snare") == -1);
 }
+
+VDRUM_TEST (aPadKeepsAFewVoicesAndFadesTheOldestOut)
+{
+    Sampler sampler;
+    sampler.setSamples (constantBank (100000));
+    HitQueue queue;
+    std::vector<float> left (256), right (256);
+
+    for (int i = 0; i < Sampler::kMaxVoicesPerPad + 3; ++i)
+        sampler.trigger (Pad::ride, 0.5f);
+    CHECK (sampler.activeVoiceCount (Pad::ride) == Sampler::kMaxVoicesPerPad);
+    CHECK (sampler.activeVoiceCount() == Sampler::kMaxVoicesPerPad + 3); // 3 still fading
+
+    sampler.render (queue, left.data(), right.data(), Sampler::kReleaseSamples + 1);
+    CHECK (sampler.activeVoiceCount() == Sampler::kMaxVoicesPerPad); // fades done
+
+    sampler.trigger (Pad::snare, 0.5f); // other pads are not affected
+    CHECK (sampler.activeVoiceCount (Pad::snare) == 1);
+}
+
+VDRUM_TEST (releasedVoicesFadeInsteadOfCutting)
+{
+    Sampler sampler;
+    sampler.setSamples (constantBank (100000));
+    HitQueue queue;
+    std::vector<float> left (Sampler::kReleaseSamples), right (Sampler::kReleaseSamples);
+
+    for (int i = 0; i < Sampler::kMaxVoicesPerPad; ++i)
+        sampler.trigger (Pad::crash, 0.5f);
+    std::vector<float> before (Sampler::kReleaseSamples), unused (Sampler::kReleaseSamples);
+    sampler.render (queue, before.data(), unused.data(), Sampler::kReleaseSamples);
+
+    sampler.trigger (Pad::crash, 0.5f); // releases the oldest, starts a new one: same level
+    sampler.render (queue, left.data(), right.data(), Sampler::kReleaseSamples);
+
+    // The total moves smoothly: the released voice loses at most 1/kReleaseSamples per sample.
+    float largestStep = 0.0f;
+    for (std::size_t i = 1; i < left.size(); ++i)
+        largestStep = std::max (largestStep, std::abs (left[i] - left[i - 1]));
+    CHECK (largestStep < 0.02f);
+    // Once the fade is over, four voices sound again: the same level as before the hit.
+    CHECK (std::abs (left.back() - before.back()) < 0.05f);
+}
+
+VDRUM_TEST (setSamplesDropsAStalePendingChange)
+{
+    Sampler sampler;
+    auto stale = std::make_unique<SampleBank> (constantBank (10, 0.9f));
+    CHECK (sampler.requestSamples (stale));
+
+    sampler.setSamples (constantBank (10, 0.1f)); // device restarted with the current kit
+    HitQueue queue;
+    std::vector<float> left (8), right (8);
+    sampler.trigger (Pad::snare, 1.0f);
+    sampler.render (queue, left.data(), right.data(), 8);
+    CHECK (sampler.takeRetired() == nullptr); // no swap happened
+}

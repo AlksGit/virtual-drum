@@ -31,6 +31,7 @@ void AudioEngine::setKit (KitFactory factory)
 {
     kitFactory = std::move (factory);
     kitChangePending = true;
+    readyBank.reset(); // built for the previous factory
     submitKit();
 }
 
@@ -40,9 +41,17 @@ void AudioEngine::submitKit()
     if (! kitChangePending || device == nullptr || ! device->isPlaying())
         return; // applied by audioDeviceAboutToStart
 
-    auto bank = std::make_unique<SampleBank> (kitFactory (device->getCurrentSampleRate()));
-    if (sampler.requestSamples (bank))
-        kitChangePending = false; // otherwise retried by the timer
+    sampler.takeRetired(); // frees the slot of the previous swap if the audio thread is done
+
+    const auto sampleRate = device->getCurrentSampleRate();
+    if (readyBank == nullptr || readyBankRate != sampleRate)
+    {
+        readyBank = std::make_unique<SampleBank> (kitFactory (sampleRate));
+        readyBankRate = sampleRate;
+    }
+
+    if (sampler.requestSamples (readyBank))
+        kitChangePending = false; // otherwise retried by the timer, with the same bank
 }
 
 void AudioEngine::timerCallback()
@@ -164,7 +173,12 @@ juce::String AudioEngine::describeDevice()
 void AudioEngine::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
     // Rendering is not running yet: allocations are fine here.
-    sampler.setSamples (kitFactory (device->getCurrentSampleRate()));
+    const auto sampleRate = device->getCurrentSampleRate();
+    if (readyBank != nullptr && readyBankRate == sampleRate)
+        sampler.setSamples (std::move (*readyBank)); // already built for this kit and rate
+    else
+        sampler.setSamples (kitFactory (sampleRate));
+    readyBank.reset();
     kitChangePending = false;
     const auto maxBlock = static_cast<std::size_t> (juce::jmax (device->getCurrentBufferSizeSamples(), 4096));
     scratchLeft.assign (maxBlock, 0.0f);

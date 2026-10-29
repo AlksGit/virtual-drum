@@ -74,6 +74,10 @@ private:
     // Message thread only.
     KitFactory kitFactory;
     bool kitChangePending = false;
+    // Kit built for the pending change, kept while the sampler refuses it (previous swap not
+    // collected yet), so that it is not rebuilt from disk on every retry.
+    std::unique_ptr<SampleBank> readyBank;
+    double readyBankRate = 0.0;
 };
 
 } // namespace vdrum
