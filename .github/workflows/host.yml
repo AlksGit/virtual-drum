@@ -29,13 +29,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # JUCE sources only depend on the pinned tag in host/CMakeLists.txt.
-      - name: Cache JUCE sources
-        uses: actions/cache@v4
-        with:
-          path: host/build/_deps/juce-src
-          key: juce-${{ runner.os }}-${{ hashFiles('host/CMakeLists.txt') }}
-
       - name: Configure
         working-directory: host
         run: cmake -S . -B build ${{ matrix.generator }}
