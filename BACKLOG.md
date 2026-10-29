@@ -64,13 +64,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
-  > Kit en 3D (OpenGL 4.1 Core) : caisse claire, toms, cymbales, charleston, en géométrie
-  > générée en code (cylindres, disques) en attendant de vrais modèles. Les deux baguettes
-  > suivent l'orientation reçue (quaternions). Caméra orbitale à la souris. 60 fps.
-  > La taille de la vue est transmise au thread GL de façon sûre (remarque review TASK-013).
-  > Blocked by: TASK-015 (orientations à afficher)
-
 - [ ] TASK-018 | host : sampler basique
   > Un sample par zone, volume selon la vélocité. Sortie CoreAudio (Mac) / ASIO (Windows),
   > buffer 64 @ 48 kHz ; sortie Windows par défaut acceptée en attendant le SDK ASIO.
@@ -89,16 +82,20 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-015 | host : générateur de fausses données réalistes
-  > Deux baguettes, ORIENT ~100 Hz, coups HIT à vélocité variée sur plusieurs zones,
-  > pattern rythmique (groove, tempo réglable). Produit des trames binaires au vrai
-  > format pour passer par le vrai parseur.
-  > Branch: feat/task-015-fake-drummer
-  > Blocked by: TASK-014 (interface source + format)
+- [ ] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
+  > Kit en 3D (OpenGL 4.1 Core) : caisse claire, toms, cymbales, charleston, en géométrie
+  > générée en code (cylindres, disques) en attendant de vrais modèles. Les deux baguettes
+  > suivent l'orientation reçue (quaternions). Caméra orbitale à la souris. 60 fps.
+  > La taille de la vue est transmise au thread GL de façon sûre (remarque review TASK-013).
+  > Branch: feat/task-016-3d-scene
+  > Blocked by: TASK-015 (orientations à afficher)
 
 ## ON HOLD
 
 ## DONE
+- [x] TASK-015 | host : générateur de fausses données réalistes
+  > Merged in: devape (2026-10-29). Batteur simulé déterministe (groove, breaks, mouvement),
+  > 11 tests, `vdrum_monitor --fake`. Protocole v2 (convention de repère des quaternions).
 - [x] TASK-014 | host : parseur protocole + source de données abstraite
   > Merged in: devape (2026-10-29). Protocole v1 (crc8 spécifié, USB IDs), 17 tests, CI verte
   > Windows + macOS. Source série non validée sur cible (hardware). Source fausses données : TASK-015.
