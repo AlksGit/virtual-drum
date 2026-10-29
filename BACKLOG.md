@@ -39,12 +39,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis pour : validation USB.
   > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
 
-- [ ] TASK-009 | tools/logger.py : série → CSV par session
-  > Resync sur 0xA5 0x5A ; CSV : une colonne par axe + stick_id + seq + rx_time_us ;
-  > `--port` sinon auto-détection VID/PID ; pathlib ; Windows et macOS.
-  > Testable avant le firmware avec des trames factices.
-  > Blocked by: TASK-005 (format)
-
 - [ ] TASK-010 | tools/plot_session.py : courbes accel/gyro + marquage saturation
   > Plots par axe depuis un CSV, échantillons saturés surlignés, stats de pertes.
   > Blocked by: TASK-009 (format CSV)
@@ -77,17 +71,20 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
-  > Kit en 3D (OpenGL 4.1 Core) : caisse claire, toms, cymbales, charleston, en géométrie
-  > générée en code (cylindres, disques) en attendant de vrais modèles. Les deux baguettes
-  > suivent l'orientation reçue (quaternions). Caméra orbitale à la souris. 60 fps.
-  > La taille de la vue est transmise au thread GL de façon sûre (remarque review TASK-013).
-  > Branch: feat/task-016-3d-scene
-  > Blocked by: TASK-015 (orientations à afficher)
+- [ ] TASK-009 | tools/logger.py : série → CSV par session
+  > Resync sur 0xA5 0x5A ; CSV : une colonne par axe + stick_id + seq + rx_time_us ;
+  > `--port` sinon auto-détection VID/PID ; pathlib ; Windows et macOS.
+  > Testable avant le firmware avec des trames factices.
+  > Branch: feat/task-009-logger
+  > Blocked by: TASK-005 (format)
 
 ## ON HOLD
 
 ## DONE
+- [x] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
+  > Merged in: devape (2026-10-29). Scène OpenGL 4.1 à 60 fps vérifiée par captures (Windows),
+  > flash au coup, caméra orbitale, tempo au clavier. 12 tests de géométrie. Build Mac OK en CI,
+  > jamais lancé sur Mac.
 - [x] TASK-005 | Décision : taille des paquets RAW (ESB DPL vs 1 échantillon/paquet)
   > Merged in: devape (2026-10-29). DPL, 8 échantillons / paquet (105 o), protocole v3.
   > Calcul de temps d'antenne dans DECISIONS.md ; risque de collisions à mesurer (TASK-012).

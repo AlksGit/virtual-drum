@@ -27,6 +27,10 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 
 ## À tester par toi
 (son, ressenti, vérifs visuelles fines)
+- **Vue 3D (TASK-016)** : lancer `Virtual Drum.exe` (ou `--fake 120`). Vérifié par captures sur le PC
+  (60 fps, flashs, baguettes qui bougent, flèches pour le tempo). À juger par toi : le rendu
+  général, la sensation de la caméra (glisser / molette / double-clic), et **le lancement sur
+  le Mac** (le build Mac passe en CI mais l'app n'y a jamais tourné).
 
 ## À tester avec le hardware
 (étapes de validation sur cible)
