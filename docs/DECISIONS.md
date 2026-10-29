@@ -53,3 +53,10 @@ Format : date — décision — pourquoi — alternatives écartées.
   prévues : délais de retransmission ESB différents par baguette ; si les pertes restent
   significatives, synchronisation par créneaux via les payloads d'ACK du récepteur. Le flux RAW
   n'existe qu'en phase 0 ; en jeu (HIT + ORIENT 100 Hz) la charge est faible.
+- **2026-10** — **NCS v3.4.1** (dernière stable), installé avec `nrfutil toolchain-manager`
+  (toolchain dans `C:
+cs	oolchains`, SDK dans `C:
+cs3.4.1`, clone superficiel). — Version
+  la plus récente, carte `xiao_ble` (variante `sense`) supportée avec le partitionnement UF2.
+  Installée sans changer la toolchain par défaut ni l'enregistrement CMake global, pour ne pas
+  perturber d'autres projets NCS (v2.3.0 / v2.5.0) présents sur le PC.

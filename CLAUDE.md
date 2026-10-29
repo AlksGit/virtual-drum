@@ -32,16 +32,19 @@ docs/
 - Firmware : **nRF Connect SDK (Zephyr)**, build avec `west`.
   - Baguette : `west build -b xiao_ble/nrf52840/sense firmware/stick`
   - Récepteur : `west build -b xiao_ble/nrf52840 firmware/receiver`
-  - Vérifier le nom exact de la board pour la version de NCS installée (`west boards | grep xiao`).
+  - Noms vérifiés pour NCS v3.4.1 (`west boards` → `xiao_ble`, variante `sense` dans
+    `zephyr/boards/seeed/xiao_ble/board.yml`).
+  - `west` se lance via la toolchain : `nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west ...`
 - Flash : les XIAO ont un bootloader **UF2** (double-tap reset → disque USB). Activer
   `CONFIG_BUILD_OUTPUT_UF2=y` et copier `build/.../zephyr.uf2`. Pas de sonde SWD nécessaire.
 - Python : `tools/` avec un `requirements.txt` (pyserial, numpy, pandas, matplotlib).
 
 ## Multi-machine (PC ↔ Mac)
 Le dev se fait sur un PC puis sur un Mac. Le repo git est le seul lien entre les deux.
-- **Version NCS figée : `vX.Y.Z` ← À RENSEIGNER à l'installation.** Même version et même outil
-  d'installation sur les deux machines (`nrfutil toolchain-manager` ou extension VS Code nRF Connect).
-  Ne jamais changer de version NCS sans l'acter dans `docs/DECISIONS.md`.
+- **Version NCS figée : `v3.4.1`** (toolchain + SDK, installés le 2026-10-29 sur le PC). Même version
+  et même outil d'installation sur les deux machines : `nrfutil toolchain-manager` (voir
+  `docs/HARDWARE.md`, section Toolchain). Ne jamais changer de version NCS sans l'acter dans
+  `docs/DECISIONS.md`.
 - `build/` n'est pas portable : après un changement de machine, rebuild propre (`west build -p`).
 - Fins de ligne : LF partout (`.gitattributes`).
 - Port série : `COMx` sous Windows, `/dev/cu.usbmodem*` sur Mac. **Aucun outil ne code un port en

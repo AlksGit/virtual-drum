@@ -39,3 +39,15 @@ schéma et wiki Seeed « XIAO nRF52840 (Sense) », datasheet LSM6DS3TR-C.
 - IMU externe meilleur (LSM6DSV16X, ±4000 dps) en breakout sur une XIAO non-Sense si le gyro sature.
 - Pédales : piézo / FSR (grosse caisse), Hall / FSR (charleston) sur l'ADC du récepteur.
 - LED IR + caméra global shutter pour une position absolue.
+
+## Toolchain (NCS v3.4.1)
+Même procédure sur le PC et le Mac :
+```
+nrfutil install toolchain-manager            # si la commande n'est pas encore installée
+nrfutil toolchain-manager install --ncs-version v3.4.1
+nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west init -m https://github.com/nrfconnect/sdk-nrf --mr v3.4.1 <dossier>/v3.4.1
+cd <dossier>/v3.4.1
+nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west update --narrow -o=--depth=1
+```
+Sur le PC : `C:
+cs3.4.1`. Sur Mac, `~/ncs/v3.4.1` par exemple.
