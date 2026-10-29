@@ -22,6 +22,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: — (TASK-024 fait)
 
 ## IN PROGRESS
+- [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
+  > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
+  > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
+  > acter). Latence affichée. Mesurer ce qu'on obtient sur le PC.
+  > Branch: feat/task-028-audio-latency
+  > Blocked by: —
+
 - [ ] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
   > Simulateur d'IMU (gyro + accéléro dans le repère baguette, bruit, saturation ±2000 dps,
   > choc à l'impact) avec vérité terrain ; détecteur (pic de vitesse angulaire + décélération,
@@ -29,12 +36,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > négatifs, latence de détection, corrélation de vélocité. Tests pytest. Sert de base à la
   > phase 1 sur données réelles.
   > Branch: feat/task-026-detection-prototype
-  > Blocked by: —
-
-- [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
-  > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
-  > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
-  > acter). Latence affichée. Mesurer ce qu'on obtient sur le PC.
   > Blocked by: —
 
 ## ON HOLD
