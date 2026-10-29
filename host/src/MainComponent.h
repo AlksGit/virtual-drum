@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AudioEngine.h"
 #include "DataSource.h"
 #include "FakeDataSource.h"
 #include "SceneState.h"
@@ -18,7 +19,7 @@ namespace vdrum
 //
 // Command line: --fake [bpm] forces the simulated drummer, --port <path> a serial port.
 // Without options the receiver is used when detected, the simulated drummer otherwise.
-// Keys: Up / Down change the tempo of the simulated drummer.
+// Keys: Up / Down change the tempo of the simulated drummer, M mutes the sound.
 class MainComponent final : public juce::Component,
                             private DataSource::Listener,
                             private juce::Timer
@@ -40,6 +41,8 @@ private:
 
     SceneState sceneState;
     SceneView sceneView { sceneState };
+    AudioEngine audio;
+    juce::String audioStatus;
     std::unique_ptr<DataSource> source;
     FakeDataSource* fakeSource = nullptr; // non-null when `source` is the simulated drummer
 

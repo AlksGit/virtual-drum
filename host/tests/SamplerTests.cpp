@@ -1,0 +1,241 @@
+#include "TestFramework.h"
+
+#include "DrumSynth.h"
+#include "FakeDrummer.h"
+#include "HitQueue.h"
+#include "Quaternion.h"
+#include "Sampler.h"
+#include "SceneState.h"
+
+#include <algorithm>
+#include <cmath>
+#include <thread>
+#include <vector>
+
+using namespace vdrum;
+
+namespace
+{
+
+constexpr double kSampleRate = 48000.0;
+
+float peak (const std::vector<float>& data, std::size_t begin = 0, std::size_t end = 0)
+{
+    end = end == 0 ? data.size() : std::min (end, data.size());
+    float p = 0.0f;
+    for (std::size_t i = begin; i < end; ++i)
+        p = std::max (p, std::abs (data[i]));
+    return p;
+}
+
+float rms (const std::vector<float>& data, std::size_t begin, std::size_t end)
+{
+    double sum = 0.0;
+    for (std::size_t i = begin; i < end; ++i)
+        sum += static_cast<double> (data[i]) * data[i];
+    return static_cast<float> (std::sqrt (sum / static_cast<double> (end - begin)));
+}
+
+// Sampler whose every pad plays a constant 1.0 for `length` samples.
+Sampler makeConstantSampler (std::size_t length)
+{
+    SampleBank bank;
+    for (auto& sample : bank)
+        sample.assign (length, 1.0f);
+    Sampler sampler;
+    sampler.setSamples (std::move (bank));
+    return sampler;
+}
+
+} // namespace
+
+VDRUM_TEST (velocityCurveIsMonotonicFromSilenceToFull)
+{
+    CHECK (Sampler::velocityToGain (0.0f) == 0.0f);
+    CHECK (Sampler::velocityToGain (1.0f) == 1.0f);
+    float previous = 0.0f;
+    for (int v = 1; v <= 127; ++v)
+    {
+        const auto gain = Sampler::velocityToGain (static_cast<float> (v) / 127.0f);
+        CHECK (gain > previous);
+        previous = gain;
+    }
+}
+
+VDRUM_TEST (panFollowsThePadPosition)
+{
+    float left = 0.0f, right = 0.0f;
+    Sampler::padPan (Pad::hiHat, left, right);
+    CHECK (left > right);
+    Sampler::padPan (Pad::ride, left, right);
+    CHECK (right > left);
+    Sampler::padPan (Pad::snare, left, right);
+    CHECK (std::abs (left - right) < 0.2f);
+    CHECK (std::abs (left * left + right * right - 1.0f) < 1.0e-4f); // equal power
+}
+
+VDRUM_TEST (aTriggeredVoicePlaysOnceThenStops)
+{
+    auto sampler = makeConstantSampler (100);
+    HitQueue queue;
+    std::vector<float> left (256), right (256);
+
+    sampler.trigger (Pad::snare, 1.0f);
+    sampler.render (queue, left.data(), right.data(), 256);
+
+    CHECK (left[0] > 0.1f && right[0] > 0.1f);
+    CHECK (left[99] == left[0]);
+    CHECK (left[100] == 0.0f);
+    CHECK (sampler.activeVoiceCount() == 0);
+}
+
+VDRUM_TEST (louderHitsAreLouder)
+{
+    auto sampler = makeConstantSampler (64);
+    HitQueue queue;
+    std::vector<float> soft (64), loud (64), unused (64);
+
+    sampler.trigger (Pad::snare, 0.3f);
+    sampler.render (queue, soft.data(), unused.data(), 64);
+    sampler.trigger (Pad::snare, 0.9f);
+    sampler.render (queue, loud.data(), unused.data(), 64);
+
+    CHECK (loud[10] > soft[10] * 2.0f);
+}
+
+VDRUM_TEST (hitsFromTheQueueStartAtTheNextBlock)
+{
+    auto sampler = makeConstantSampler (1000);
+    HitQueue queue;
+    std::vector<float> left (64), right (64);
+
+    sampler.render (queue, left.data(), right.data(), 64);
+    CHECK (peak (left) == 0.0f);
+
+    CHECK (queue.push ({ Pad::crash, 1.0f }));
+    sampler.render (queue, left.data(), right.data(), 64);
+    CHECK (left[0] > 0.0f);
+}
+
+VDRUM_TEST (voicesAreStolenWhenAllAreBusy)
+{
+    auto sampler = makeConstantSampler (100000);
+    for (int i = 0; i < Sampler::kMaxVoices + 10; ++i)
+        sampler.trigger (Pad::ride, 0.5f);
+    CHECK (sampler.activeVoiceCount() == Sampler::kMaxVoices);
+}
+
+VDRUM_TEST (outputNeverExceedsFullScale)
+{
+    auto sampler = makeConstantSampler (512);
+    HitQueue queue;
+    for (int i = 0; i < Sampler::kMaxVoices; ++i)
+        sampler.trigger (Pad::snare, 1.0f);
+
+    std::vector<float> left (512), right (512);
+    sampler.render (queue, left.data(), right.data(), 512);
+    CHECK (peak (left) <= 1.0f && peak (right) <= 1.0f);
+}
+
+VDRUM_TEST (queueKeepsOrderAndReportsWhenFull)
+{
+    HitQueue queue;
+    int pushed = 0;
+    while (queue.push ({ Pad::snare, static_cast<float> (pushed) }))
+        ++pushed;
+    CHECK (pushed == 256);
+
+    HitEvent event;
+    for (int i = 0; i < pushed; ++i)
+    {
+        REQUIRE (queue.pop (event));
+        CHECK (event.velocity == static_cast<float> (i));
+    }
+    CHECK (! queue.pop (event));
+}
+
+VDRUM_TEST (queueWorksAcrossThreads)
+{
+    HitQueue queue;
+    static constexpr int kCount = 20000;
+
+    std::thread producer ([&queue]
+    {
+        for (int i = 0; i < kCount; ++i)
+            while (! queue.push ({ Pad::snare, static_cast<float> (i) }))
+                std::this_thread::yield();
+    });
+
+    int received = 0;
+    bool inOrder = true;
+    HitEvent event;
+    while (received < kCount)
+    {
+        if (queue.pop (event))
+        {
+            inOrder = inOrder && event.velocity == static_cast<float> (received);
+            ++received;
+        }
+        else
+        {
+            std::this_thread::yield();
+        }
+    }
+    producer.join();
+    CHECK (inOrder);
+}
+
+VDRUM_TEST (synthesisedSoundsAreUsable)
+{
+    for (const auto& info : kDrumKit)
+    {
+        const auto sound = synthesiseDrum (info.pad, kSampleRate);
+        REQUIRE (sound.size() > static_cast<std::size_t> (0.1 * kSampleRate));
+        CHECK (std::abs (peak (sound) - 0.9f) < 0.01f);
+
+        bool finite = true;
+        for (const auto s : sound)
+            finite = finite && std::isfinite (s);
+        CHECK (finite);
+
+        // The sound decays: the last tenth is much quieter than the first.
+        const auto tenth = sound.size() / 10;
+        CHECK (rms (sound, sound.size() - tenth, sound.size()) < 0.25f * rms (sound, 0, tenth));
+        CHECK (sound == synthesiseDrum (info.pad, kSampleRate)); // deterministic
+    }
+}
+
+VDRUM_TEST (fakeGrooveProducesSoundRightAfterEachHit)
+{
+    // Offline end to end: fake drummer -> zone of each hit -> queue -> sampler.
+    Sampler sampler;
+    sampler.setSamples (synthesiseKit (kSampleRate));
+    HitQueue queue;
+    FakeDrummer drummer ({ 120.0, 4 });
+
+    constexpr int kBlock = 64;
+    const auto blockUs = static_cast<std::uint64_t> (1.0e6 * kBlock / kSampleRate);
+    std::vector<float> left (kBlock), right (kBlock), output;
+    std::vector<std::size_t> hitBlocks;
+    std::vector<protocol::Frame> frames;
+
+    for (std::uint64_t t = 0; t < 4'000'000; t += blockUs)
+    {
+        frames.clear();
+        drummer.generateUntil (t, frames);
+        for (const auto& frame : frames)
+            if (const auto* hit = std::get_if<protocol::HitPacket> (&frame.packet))
+            {
+                queue.push ({ nearestPad (Quat::fromQ14 (hit->quat)), static_cast<float> (hit->velocity) / 127.0f });
+                hitBlocks.push_back (output.size());
+            }
+
+        sampler.render (queue, left.data(), right.data(), kBlock);
+        output.insert (output.end(), left.begin(), left.end());
+    }
+
+    REQUIRE (hitBlocks.size() > 10);
+    CHECK (peak (output, 0, hitBlocks.front()) == 0.0f); // silence before the first hit
+    for (const auto start : hitBlocks)
+        CHECK (peak (output, start, start + kBlock) > 0.01f); // sound within one block of each hit
+}
