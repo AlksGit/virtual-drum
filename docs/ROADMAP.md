@@ -2,16 +2,16 @@
 
 ## Phase 0 — Enregistreur de données brutes ← EN COURS
 Objectif : enregistrer des sessions de jeu réelles pour dimensionner la suite.
-- [ ] `git init` + `.gitattributes` / `.gitignore` en place, premier commit.
-- [ ] Setup NCS + `west`, **noter la version exacte dans CLAUDE.md**, build d'un blinky sur les deux
-      types de XIAO, flash UF2.
-- [ ] `stick` : lecture IMU (driver Zephyr ou accès registre), ODR ≥ 1 kHz, FIFO.
-- [ ] `stick` → `receiver` : ESB, paquets RAW (cf. PROTOCOL.md), compteur de pertes.
-- [ ] `receiver` : relais USB CDC avec timestamp de réception.
-- [ ] `tools/logger.py` : lecture série → CSV par session (une colonne par axe + stick_id + seq).
+- [x] `git init` + `.gitattributes` / `.gitignore` en place, premier commit.
+- [x] Setup NCS + `west`, **noter la version exacte dans CLAUDE.md** (v3.4.1), build d'un blinky sur
+      les deux types de XIAO. — [ ] flash UF2 (hardware).
+- [x] `stick` : lecture IMU (driver ST), ODR 1,66 kHz, FIFO. — [ ] validé sur cible.
+- [x] `stick` → `receiver` : ESB, paquets RAW de 8 échantillons, compteur de pertes. — [ ] validé sur cible.
+- [x] `receiver` : relais USB CDC avec timestamp de réception. — [ ] validé sur cible.
+- [x] `tools/logger.py` : lecture série → CSV par session (une colonne par axe + stick_id + seq).
       Port via `--port`, sinon auto-détection VID/PID ; doit tourner tel quel sous Windows et macOS.
 - [ ] Valider la bascule : clone sur le Mac, même NCS, rebuild propre, flash, logger OK.
-- [ ] `tools/plot_session.py` : courbes accéléro/gyro, marquage des échantillons saturés.
+- [x] `tools/plot_session.py` : courbes accéléro/gyro, marquage des échantillons saturés.
 - [ ] **Mesures** : débit réel, pertes de paquets, saturation gyro sur coups secs, dérive du lacet
       (baguette posée 10 min, puis 10 min de jeu).
 
