@@ -39,15 +39,14 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-020 | host : bloom et animations au coup
-  > Un HIT déclenche un flash avec halo (bloom) sur le pad visé, intensité selon la
-  > vélocité, décroissance. Vibration des cymbales, particules optionnelles. 60 fps.
-  > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
-
 ## IN PROGRESS
 ## ON HOLD
 
 ## DONE
+- [x] TASK-020 | host : bloom et animations au coup
+  > Merged in: devape (2026-10-29). Bloom HDR (pyramide 6 niveaux), anneau lumineux sur les peaux,
+  > balancement amorti des cymbales. Audio ouvert 1,5 s après le démarrage (la scène s'affiche
+  > d'abord), option --no-audio. Particules non faites (optionnelles).
 - [x] TASK-023 | host : modèles procéduraux détaillés du kit
   > Merged in: devape (2026-10-29). Cercles, coquilles, tirants, grosse caisse avec pédale et logo
   > néon, support de toms, tom basse sur pieds, tripodes, pieds à perche dégagés des pads,
