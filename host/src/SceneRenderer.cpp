@@ -17,6 +17,13 @@ constexpr int kShadowMapSize = 2048;
 constexpr int kMsaaSamples = 4;
 constexpr double kFlashDecaySeconds = 0.18;
 constexpr float kExposure = 1.0f;
+constexpr float kBloomThreshold = 1.0f;
+constexpr float kBloomStrength = 0.12f;
+
+// Cymbal swing after a hit: damped oscillation, amplitude scaled by velocity.
+constexpr float kSwingAmplitudeRad = 0.11f;
+constexpr float kSwingFrequencyHz = 2.4f;
+constexpr float kSwingDecaySeconds = 0.9f;
 
 // Key light: a spot above and slightly in front of the kit.
 constexpr Vec3 kSpotPosition { 0.75f, -0.35f, 3.1f };
@@ -107,8 +114,23 @@ bool SceneRenderer::create (const KitModel& model)
     sceneProgram = compile (shaders::kSceneVertex, shaders::kSceneFragment);
     shadowProgram = compile (shaders::kShadowVertex, shaders::kShadowFragment);
     tonemapProgram = compile (shaders::kFullscreenVertex, shaders::kTonemapFragment);
-    if (sceneProgram == nullptr || shadowProgram == nullptr || tonemapProgram == nullptr)
+    bloomDownProgram = compile (shaders::kFullscreenVertex, shaders::kBloomDownsampleFragment);
+    bloomUpProgram = compile (shaders::kFullscreenVertex, shaders::kBloomUpsampleFragment);
+    if (sceneProgram == nullptr || shadowProgram == nullptr || tonemapProgram == nullptr
+        || bloomDownProgram == nullptr || bloomUpProgram == nullptr)
         return false;
+
+    for (auto* entry : { &bloomDown, &bloomUp })
+    {
+        const auto id = (entry == &bloomDown ? bloomDownProgram : bloomUpProgram)->getProgramID();
+        entry->source = static_cast<int> (glGetUniformLocation (id, "source"));
+        entry->sourceTexel = static_cast<int> (glGetUniformLocation (id, "sourceTexel"));
+        entry->uvScale = static_cast<int> (glGetUniformLocation (id, "uvScale"));
+        entry->targetSize = static_cast<int> (glGetUniformLocation (id, "targetSize"));
+        entry->firstPass = static_cast<int> (glGetUniformLocation (id, "firstPass"));
+        entry->threshold = static_cast<int> (glGetUniformLocation (id, "threshold"));
+        entry->radius = static_cast<int> (glGetUniformLocation (id, "radius"));
+    }
 
     const auto sceneLocation = [this] (const char* name) { return static_cast<int> (glGetUniformLocation (sceneProgram->getProgramID(), name)); };
     auto& u = sceneUniforms;
@@ -135,10 +157,15 @@ bool SceneRenderer::create (const KitModel& model)
     u.rimColourB = sceneLocation ("rimColourB");
     u.shadowMap = sceneLocation ("shadowMap");
     u.shadowTexel = sceneLocation ("shadowTexel");
+    u.hitAge = sceneLocation ("hitAge");
+    u.hitStrength = sceneLocation ("hitStrength");
+    u.rippleColour = sceneLocation ("rippleColour");
 
     shadowModel = static_cast<int> (glGetUniformLocation (shadowProgram->getProgramID(), "model"));
     shadowLightViewProjection = static_cast<int> (glGetUniformLocation (shadowProgram->getProgramID(), "lightViewProjection"));
     tonemapImage = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "hdrImage"));
+    tonemapBloom = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "bloomImage"));
+    tonemapBloomStrength = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "bloomStrength"));
     tonemapResolution = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "resolution"));
     tonemapImageScale = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "imageScale"));
     tonemapExposure = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "exposure"));
@@ -267,6 +294,7 @@ void SceneRenderer::release()
     drawItems.clear();
 
     releaseTargets();
+    releaseBloomTargets();
     if (shadowFramebuffer != 0)
     {
         GLuint framebuffer = shadowFramebuffer;
@@ -284,6 +312,8 @@ void SceneRenderer::release()
     sceneProgram.reset();
     shadowProgram.reset();
     tonemapProgram.reset();
+    bloomDownProgram.reset();
+    bloomUpProgram.reset();
     ready = false;
 }
 
@@ -293,15 +323,33 @@ void SceneRenderer::collectDrawItems (const SceneState::Snapshot& snapshot, doub
 
     for (const auto& part : kit.parts)
     {
-        auto emissive = part.material.glow;
+        DrawItem item { &meshes[static_cast<std::size_t> (part.mesh)], part.model, &part.material, part.material.glow };
+
         if (part.pad >= 0)
         {
             const auto& hit = snapshot.pads[static_cast<std::size_t> (part.pad)];
-            const auto age = nowSeconds - hit.timeSeconds;
-            if (age >= 0.0)
-                emissive = emissive + part.flashColour * (hit.velocity * static_cast<float> (std::exp (-age / kFlashDecaySeconds)));
+            const auto age = static_cast<float> (nowSeconds - hit.timeSeconds);
+            if (age >= 0.0f && age < 10.0f)
+            {
+                item.emissive = item.emissive + part.flashColour * (hit.velocity * std::exp (-age / static_cast<float> (kFlashDecaySeconds)));
+                item.hitAge = age;
+                item.hitStrength = hit.velocity;
+                item.rippleColour = part.flashColour;
+
+                if (part.wobbles)
+                {
+                    // Swing around the horizontal axis facing the player, like a cymbal pushed
+                    // down on its near edge.
+                    const auto angle = kSwingAmplitudeRad * part.wobbleAmount * hit.velocity
+                                     * std::exp (-age / kSwingDecaySeconds) * std::sin (2.0f * kPi * kSwingFrequencyHz * age);
+                    const auto towardsPlayer = normalise (Vec3 { KitLayout::kPivot.x - part.pivot.x, KitLayout::kPivot.y - part.pivot.y, 0.0f });
+                    const auto axis = normalise (cross (Vec3 { 0.0f, 0.0f, 1.0f }, towardsPlayer));
+                    item.model = Mat4::translation (part.pivot) * Mat4::rotation (Quat::fromAxisAngle (axis, angle))
+                               * Mat4::translation (part.pivot * -1.0f) * part.model;
+                }
+            }
         }
-        drawItems.push_back ({ &meshes[static_cast<std::size_t> (part.mesh)], part.model, &part.material, emissive });
+        drawItems.push_back (item);
     }
 
     for (int stick = 0; stick < SceneState::kStickCount; ++stick)
@@ -378,19 +426,126 @@ void SceneRenderer::drawScenePass (const Mat4& viewProjection, const Mat4& light
         glUniform1i (u.pattern, static_cast<int> (m.pattern));
         glUniform1f (u.patternScale, m.patternScale);
         setVector (u.emissive, item.emissive);
+        glUniform1f (u.hitAge, item.hitAge);
+        glUniform1f (u.hitStrength, item.hitStrength);
+        setVector (u.rippleColour, item.rippleColour);
 
         glBindVertexArray (item.mesh->vertexArray);
         glDrawElements (GL_TRIANGLES, item.mesh->indexCount, GL_UNSIGNED_INT, nullptr);
     }
 }
 
+void SceneRenderer::releaseBloomTargets()
+{
+    if (bloomLevelCount > 0)
+    {
+        glDeleteFramebuffers (bloomLevelCount, bloomFramebuffers);
+        glDeleteTextures (bloomLevelCount, bloomTextures);
+    }
+    for (int i = 0; i < kBloomLevels; ++i)
+        bloomFramebuffers[i] = bloomTextures[i] = 0;
+    bloomLevelCount = 0;
+    bloomViewWidth = bloomViewHeight = 0;
+}
+
+bool SceneRenderer::ensureBloomTargets (int width, int height)
+{
+    if (bloomLevelCount > 0 && width == bloomViewWidth && height == bloomViewHeight)
+        return true;
+
+    // Half resolution and below: reallocating on resize is cheap.
+    releaseBloomTargets();
+
+    auto complete = true;
+    for (int i = 0; i < kBloomLevels; ++i)
+    {
+        const auto w = width >> (i + 1);
+        const auto h = height >> (i + 1);
+        if (w < 2 || h < 2)
+            break;
+
+        GLuint framebuffer = 0, texture = 0;
+        glGenFramebuffers (1, &framebuffer);
+        glGenTextures (1, &texture);
+        glBindTexture (GL_TEXTURE_2D, texture);
+        glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA16F, w, h, 0, GL_RGBA, GL_FLOAT, nullptr);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindFramebuffer (GL_FRAMEBUFFER, framebuffer);
+        glFramebufferTexture2D (GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+        complete = complete && glCheckFramebufferStatus (GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+
+        bloomFramebuffers[i] = framebuffer;
+        bloomTextures[i] = texture;
+        bloomWidths[i] = w;
+        bloomHeights[i] = h;
+        bloomLevelCount = i + 1;
+    }
+    glBindTexture (GL_TEXTURE_2D, 0);
+    glBindFramebuffer (GL_FRAMEBUFFER, context.getFrameBufferID());
+
+    if (! complete || bloomLevelCount == 0)
+    {
+        DBG ("Bloom framebuffers incomplete");
+        releaseBloomTargets();
+        return false;
+    }
+
+    bloomViewWidth = width;
+    bloomViewHeight = height;
+    return true;
+}
+
+void SceneRenderer::drawBloomPass()
+{
+    glDisable (GL_DEPTH_TEST);
+    glBindVertexArray (emptyVertexArray);
+    glActiveTexture (GL_TEXTURE0);
+
+    // Downsample: bright parts of the HDR image, then successive halvings.
+    bloomDownProgram->use();
+    glUniform1i (bloomDown.source, 0);
+    glUniform1f (bloomDown.threshold, kBloomThreshold);
+    for (int i = 0; i < bloomLevelCount; ++i)
+    {
+        glBindFramebuffer (GL_FRAMEBUFFER, bloomFramebuffers[i]);
+        glViewport (0, 0, bloomWidths[i], bloomHeights[i]);
+
+        const auto first = i == 0;
+        glBindTexture (GL_TEXTURE_2D, first ? resolveTexture : bloomTextures[i - 1]);
+        const auto sourceWidth = first ? targetWidth : bloomWidths[i - 1];
+        const auto sourceHeight = first ? targetHeight : bloomHeights[i - 1];
+        glUniform2f (bloomDown.sourceTexel, 1.0f / static_cast<float> (sourceWidth), 1.0f / static_cast<float> (sourceHeight));
+        glUniform2f (bloomDown.uvScale,
+                     first ? static_cast<float> (viewWidth) / static_cast<float> (targetWidth) : 1.0f,
+                     first ? static_cast<float> (viewHeight) / static_cast<float> (targetHeight) : 1.0f);
+        glUniform2f (bloomDown.targetSize, static_cast<float> (bloomWidths[i]), static_cast<float> (bloomHeights[i]));
+        glUniform1i (bloomDown.firstPass, first ? 1 : 0);
+        glDrawArrays (GL_TRIANGLES, 0, 3);
+    }
+
+    // Upsample: blur each level and add it onto the next larger one.
+    bloomUpProgram->use();
+    glUniform1i (bloomUp.source, 0);
+    glUniform1f (bloomUp.radius, 1.0f);
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_ONE, GL_ONE);
+    for (int i = bloomLevelCount - 1; i > 0; --i)
+    {
+        glBindFramebuffer (GL_FRAMEBUFFER, bloomFramebuffers[i - 1]);
+        glViewport (0, 0, bloomWidths[i - 1], bloomHeights[i - 1]);
+        glBindTexture (GL_TEXTURE_2D, bloomTextures[i]);
+        glUniform2f (bloomUp.sourceTexel, 1.0f / static_cast<float> (bloomWidths[i]), 1.0f / static_cast<float> (bloomHeights[i]));
+        glUniform2f (bloomUp.targetSize, static_cast<float> (bloomWidths[i - 1]), static_cast<float> (bloomHeights[i - 1]));
+        glDrawArrays (GL_TRIANGLES, 0, 3);
+    }
+    glDisable (GL_BLEND);
+}
+
 void SceneRenderer::drawTonemapPass (int width, int height)
 {
-    // Resolve the multisampled HDR image, then tone map it into JUCE's framebuffer.
-    glBindFramebuffer (GL_READ_FRAMEBUFFER, msaaFramebuffer);
-    glBindFramebuffer (GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
-    glBlitFramebuffer (0, 0, viewWidth, viewHeight, 0, 0, viewWidth, viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
     glBindFramebuffer (GL_FRAMEBUFFER, context.getFrameBufferID());
     glViewport (0, 0, width, height);
     glDisable (GL_DEPTH_TEST);
@@ -399,6 +554,11 @@ void SceneRenderer::drawTonemapPass (int width, int height)
     glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, resolveTexture);
     glUniform1i (tonemapImage, 0);
+    glActiveTexture (GL_TEXTURE1);
+    glBindTexture (GL_TEXTURE_2D, bloomLevelCount > 0 ? bloomTextures[0] : 0);
+    glUniform1i (tonemapBloom, 1);
+    glUniform1f (tonemapBloomStrength, bloomLevelCount > 0 ? kBloomStrength : 0.0f);
+    glActiveTexture (GL_TEXTURE0);
     glUniform2f (tonemapResolution, static_cast<float> (width), static_cast<float> (height));
     glUniform2f (tonemapImageScale, static_cast<float> (viewWidth) / static_cast<float> (targetWidth),
                  static_cast<float> (viewHeight) / static_cast<float> (targetHeight));
@@ -440,11 +600,22 @@ void SceneRenderer::render (const SceneState::Snapshot& snapshot, double nowSeco
 
     drawShadowPass (lightViewProjection);
     drawScenePass (projection * view, lightViewProjection, camera.eye);
+
+    // Resolve the multisampled HDR image into a texture.
+    glBindFramebuffer (GL_READ_FRAMEBUFFER, msaaFramebuffer);
+    glBindFramebuffer (GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
+    glBlitFramebuffer (0, 0, viewWidth, viewHeight, 0, 0, viewWidth, viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    if (ensureBloomTargets (width, height))
+        drawBloomPass();
     drawTonemapPass (width, height);
 
     // Leave the state as JUCE expects it for painting the overlay components.
     glBindVertexArray (0);
     glUseProgram (0);
+    glActiveTexture (GL_TEXTURE1);
+    glBindTexture (GL_TEXTURE_2D, 0);
+    glActiveTexture (GL_TEXTURE0);
     glBindTexture (GL_TEXTURE_2D, 0);
     glBindFramebuffer (GL_FRAMEBUFFER, context.getFrameBufferID());
     glViewport (viewport[0], viewport[1], viewport[2], viewport[3]);

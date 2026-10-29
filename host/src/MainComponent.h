@@ -19,6 +19,7 @@ namespace vdrum
 //
 // Command line: --fake [bpm] forces the simulated drummer, --port <path> a serial port,
 // --view <degrees> sets the initial camera azimuth (0 = front of the kit, 180 = behind).
+// --no-audio disables the sound output.
 // Without options the receiver is used when detected, the simulated drummer otherwise.
 // Keys: Up / Down change the tempo of the simulated drummer, M mutes the sound.
 class MainComponent final : public juce::Component,

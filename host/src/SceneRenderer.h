@@ -49,7 +49,12 @@ private:
         Mat4 model;
         const Material* material;
         Vec3 emissive;
+        float hitAge = 1.0e3f;
+        float hitStrength = 0.0f;
+        Vec3 rippleColour;
     };
+
+    static constexpr int kBloomLevels = 6;
 
     struct SceneUniforms
     {
@@ -58,6 +63,12 @@ private:
         int cameraPosition = -1, spotPosition = -1, spotDirection = -1, spotColour = -1, spotCosInner = -1, spotCosOuter = -1;
         int rimDirectionA = -1, rimColourA = -1, rimDirectionB = -1, rimColourB = -1;
         int shadowMap = -1, shadowTexel = -1;
+        int hitAge = -1, hitStrength = -1, rippleColour = -1;
+    };
+
+    struct BloomUniforms
+    {
+        int source = -1, sourceTexel = -1, uvScale = -1, targetSize = -1, firstPass = -1, threshold = -1, radius = -1;
     };
 
     std::unique_ptr<juce::OpenGLShaderProgram> compile (const char* vertex, const char* fragment);
@@ -68,7 +79,10 @@ private:
     void collectDrawItems (const SceneState::Snapshot& snapshot, double nowSeconds);
     void drawShadowPass (const Mat4& lightViewProjection);
     void drawScenePass (const Mat4& viewProjection, const Mat4& lightViewProjection, Vec3 eye);
+    void drawBloomPass();
     void drawTonemapPass (int width, int height);
+    bool ensureBloomTargets (int width, int height);
+    void releaseBloomTargets();
 
     juce::OpenGLContext& context;
     KitModel kit;
@@ -76,9 +90,12 @@ private:
     std::vector<DrawItem> drawItems;
 
     std::unique_ptr<juce::OpenGLShaderProgram> sceneProgram, shadowProgram, tonemapProgram;
+    std::unique_ptr<juce::OpenGLShaderProgram> bloomDownProgram, bloomUpProgram;
+    BloomUniforms bloomDown, bloomUp;
     SceneUniforms sceneUniforms;
     int shadowModel = -1, shadowLightViewProjection = -1;
-    int tonemapImage = -1, tonemapResolution = -1, tonemapImageScale = -1, tonemapExposure = -1;
+    int tonemapImage = -1, tonemapBloom = -1, tonemapBloomStrength = -1;
+    int tonemapResolution = -1, tonemapImageScale = -1, tonemapExposure = -1;
 
     juce::uint32 emptyVertexArray = 0;
     juce::uint32 shadowFramebuffer = 0, shadowTexture = 0;
@@ -86,6 +103,14 @@ private:
     juce::uint32 resolveFramebuffer = 0, resolveTexture = 0;
     int targetWidth = 0, targetHeight = 0; // allocated size (grows only, see ensureTargets)
     int viewWidth = 0, viewHeight = 0;     // part of the targets used this frame
+
+    // Bloom pyramid: level i is (view size >> (i + 1)).
+    juce::uint32 bloomFramebuffers[kBloomLevels] = {};
+    juce::uint32 bloomTextures[kBloomLevels] = {};
+    int bloomWidths[kBloomLevels] = {};
+    int bloomHeights[kBloomLevels] = {};
+    int bloomLevelCount = 0;
+    int bloomViewWidth = 0, bloomViewHeight = 0;
     bool ready = false;
 };
 

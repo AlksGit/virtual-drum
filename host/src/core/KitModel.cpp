@@ -70,6 +70,19 @@ public:
         model.parts.push_back ({ model.addMesh (mesh), material, transform, pad, flash });
     }
 
+    // Part that swings with a cymbal after a hit on `pad`.
+    void addSwinging (const Mesh& mesh, const Material& material, const Mat4& transform, int pad, Vec3 flash,
+                      Vec3 pivot, float amount)
+    {
+        if (mesh.indices.empty())
+            return;
+        KitPart part { model.addMesh (mesh), material, transform, pad, flash };
+        part.wobbles = true;
+        part.pivot = pivot;
+        part.wobbleAmount = amount;
+        model.parts.push_back (part);
+    }
+
 private:
     KitModel& model;
 };
@@ -192,9 +205,11 @@ void addDrum (Builder& builder, const Mat4& transform, float r, float depth, con
 // --- Cymbals -------------------------------------------------------------------------------
 
 // Cymbal in its local frame (edge at z = 0, bell up), with felts and wing nut on the post.
-void addCymbal (Builder& builder, const Mat4& transform, float r, int pad, bool withTopHardware)
+// Everything here swings with the cymbal after a hit.
+void addCymbal (Builder& builder, const Mat4& transform, float r, int pad, bool withTopHardware, float swing)
 {
-    builder.add (makeCymbal (r, kSegments), bronze (r), transform, pad, kCymbalFlash);
+    const auto pivot = transform.transformPoint ({ 0.0f, 0.0f, 0.15f * r });
+    builder.addSwinging (makeCymbal (r, kSegments), bronze (r), transform, pad, kCymbalFlash, pivot, swing);
 
     const auto bellTop = 0.24f * r;
     Mesh felts, metal;
@@ -206,8 +221,8 @@ void addCymbal (Builder& builder, const Mat4& transform, float r, int pad, bool 
         append (metal, translated (makeTorus (0.008f, 0.004f, kSmallSegments, 8), { 0.0f, 0.0f, bellTop + 0.024f }));
         append (metal, transformed (makeBox ({ 0.04f, 0.006f, 0.014f }), Mat4::translation ({ 0.0f, 0.0f, bellTop + 0.034f })));
     }
-    builder.add (felts, felt(), transform);
-    builder.add (metal, chrome(), transform);
+    builder.addSwinging (felts, felt(), transform, pad, {}, pivot, swing);
+    builder.addSwinging (metal, chrome(), transform, pad, {}, pivot, swing);
 }
 
 // Tilter at the top of a cymbal stand, joining the tube to the cymbal post.
@@ -376,10 +391,12 @@ void addCymbals (Builder& builder)
         if (info.pad == Pad::hiHat)
         {
             // Top cymbal, bottom cymbal upside down under it, rod, clutch, pedal.
-            addCymbal (builder, transform, r, pad, false);
-            builder.add (makeCymbal (r, kSegments), bronze (r),
-                         transform * Mat4::translation ({ 0.0f, 0.0f, -0.022f }) * Mat4::rotation (Quat::fromAxisAngle ({ 1, 0, 0 }, kPi)),
-                         pad, kCymbalFlash * 0.6f);
+            // A closed hi-hat barely swings.
+            constexpr float kHiHatSwing = 0.25f;
+            addCymbal (builder, transform, r, pad, false, kHiHatSwing);
+            builder.addSwinging (makeCymbal (r, kSegments), bronze (r),
+                                 transform * Mat4::translation ({ 0.0f, 0.0f, -0.022f }) * Mat4::rotation (Quat::fromAxisAngle ({ 1, 0, 0 }, kPi)),
+                                 pad, kCymbalFlash * 0.6f, transform.transformPoint ({ 0.0f, 0.0f, 0.15f * r }), kHiHatSwing);
 
             const Vec3 base { centre.x, centre.y, 0.0f };
             addTripod (builder, base, centre.z - 0.05f, 0.27f, 0.20f, 0.3f);
@@ -396,7 +413,7 @@ void addCymbals (Builder& builder)
             continue;
         }
 
-        addCymbal (builder, transform, r, pad, true);
+        addCymbal (builder, transform, r, pad, true, 1.0f);
 
         // Boom stand: the tube stands where it clears every other pad, a boom arm reaches the
         // cymbal (a straight stand would go through the hi-hat or the floor tom).
