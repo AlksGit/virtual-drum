@@ -1,0 +1,67 @@
+name: firmware
+
+on:
+  push:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware.yml"
+  pull_request:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware.yml"
+  workflow_dispatch:
+
+env:
+  NCS_VERSION: v3.4.1 # pinned, see CLAUDE.md and docs/DECISIONS.md
+
+jobs:
+  build:
+    name: build (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    container: ghcr.io/nrfconnect/sdk-nrf-toolchain:v3.4.1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: stick
+            board: xiao_ble/nrf52840/sense
+          - app: receiver
+            board: xiao_ble/nrf52840
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: project
+
+      # The SDK workspace only depends on the NCS version.
+      - name: Cache NCS workspace
+        uses: actions/cache@v4
+        with:
+          path: ncs
+          key: ncs-${{ env.NCS_VERSION }}
+
+      - name: Fetch NCS
+        run: |
+          if [ ! -d ncs/.west ]; then
+            west init -m https://github.com/nrfconnect/sdk-nrf --mr "$NCS_VERSION" ncs
+          fi
+          cd ncs
+          west update --narrow -o=--depth=1
+
+      - name: Build
+        run: |
+          export ZEPHYR_BASE="$GITHUB_WORKSPACE/ncs/zephyr"
+          cd ncs
+          west build -b "${{ matrix.board }}" "$GITHUB_WORKSPACE/project/firmware/${{ matrix.app }}" \
+            -d "$GITHUB_WORKSPACE/build/${{ matrix.app }}" -p always
+
+      - name: Upload UF2
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-uf2
+          path: build/${{ matrix.app }}/${{ matrix.app }}/zephyr/zephyr.uf2
+          if-no-files-found: error
