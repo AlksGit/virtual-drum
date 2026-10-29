@@ -62,6 +62,8 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 - **Rendu 3D (TASK-019)** : capture dans `docs/images/host-3d-view.png`. Direction artistique à
   valider : fûts laqués bleu à paillettes, cymbales bronze, studio sombre, liserés néon cyan /
   magenta, tapis à anneau cyan. Les couleurs sont des constantes faciles à changer.
+- **Animations (TASK-020)** : bloom, anneau lumineux sur les peaux, balancement des cymbales.
+  Intensités réglables (constantes en tête de `host/src/SceneRenderer.cpp`).
 - **Son (TASK-018)** : écouter l'app avec le batteur simulé. Les sons sont synthétisés en code
   (caisse claire, toms, charleston, crash, ride) : à juger à l'oreille, avec la latence perçue.
   M coupe le son.
@@ -69,7 +71,7 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 ## À tester avec le hardware
 (étapes de validation sur cible)
 - **Blinky (TASK-003)** : télécharger les UF2 depuis l'onglet Actions de GitHub (workflow
-  « firmware », artefacts `stick-uf2` / `receiver-uf2`) ou builder en local, double-tap reset,
+  « firmware », artefacts `stick-left-uf2`, `stick-right-uf2`, `receiver-uf2`) ou builder en local, double-tap reset,
   copier `zephyr.uf2` : LED bleue qui clignote sur une baguette, verte sur le récepteur.
 - **Lien USB (TASK-014)** : brancher le récepteur, lancer `vdrum_monitor --list` puis `vdrum_monitor` :
   le port doit être détecté (VID/PID 2FE3:0100), les débits par baguette affichés, 0 crc_errors.
