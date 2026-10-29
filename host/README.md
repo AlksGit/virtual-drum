@@ -31,6 +31,15 @@ App bundle: `build/VirtualDrum_artefacts/Release/Virtual Drum.app`
 
 `build/` is not portable between machines: after switching PC ↔ Mac, delete it and configure again.
 
+### Windows: path length limit
+JUCE is cloned inside `build/_deps/`, which creates deep paths. If the repo lives in a deep
+directory, MSBuild fails with an error such as `exceeds the OS max path limit` (260 characters).
+Either clone the repo close to the drive root (e.g. `C:\devirtual-drum`), or enable long paths
+once from an admin PowerShell and reboot:
+```
+New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name LongPathsEnabled -Value 1 -PropertyType DWORD -Force
+```
+
 ## Offline / local JUCE
 To build against a local JUCE checkout instead of downloading it (must be the same tag):
 ```
