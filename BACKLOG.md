@@ -76,11 +76,12 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > format pour passer par le vrai parseur.
   > Blocked by: TASK-014 (interface source + format)
 
-- [ ] TASK-016 | host : vue 3D « batterie » stylée
-  > Kit en 3D (OpenGL) : caisse claire, toms, cymbales, charleston. Pads qui s'illuminent
-  > au coup, intensité selon la vélocité, animation de décroissance. Les deux baguettes
-  > sont modélisées et suivent l'orientation reçue (quaternions). Caméra orbitale. 60 fps.
-  > Blocked by: TASK-015 (données à afficher)
+- [ ] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
+  > Kit en 3D (OpenGL 4.1 Core) : caisse claire, toms, cymbales, charleston, en géométrie
+  > générée en code (cylindres, disques) en attendant de vrais modèles. Les deux baguettes
+  > suivent l'orientation reçue (quaternions). Caméra orbitale à la souris. 60 fps.
+  > La taille de la vue est transmise au thread GL de façon sûre (remarque review TASK-013).
+  > Blocked by: TASK-015 (orientations à afficher)
 
 - [ ] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)
   > docs/ROADMAP.md et docs/DECISIONS.md reflètent le démarrage anticipé de l'app JUCE
@@ -92,6 +93,22 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > buffer 64 @ 48 kHz ; sortie Windows par défaut acceptée en attendant le SDK ASIO.
   > Déclenché par les HIT, fausses données comprises.
   > Blocked by: TASK-014 (réception des HIT) ; indépendant de la vue 3D
+
+- [ ] TASK-019 | host : éclairage et matériaux
+  > Éclairage type PBR : chrome pour cymbales et métal, peau mate pour les fûts.
+  > Direction artistique sombre avec accents néon. Modèles glTF sous licence libre
+  > (CC0 de préférence) pour remplacer la géométrie générée. 60 fps.
+  > Blocked by: TASK-016 (scène à éclairer)
+
+- [ ] TASK-020 | host : bloom et animations au coup
+  > Un HIT déclenche un flash avec halo (bloom) sur le pad visé, intensité selon la
+  > vélocité, décroissance. Vibration des cymbales, particules optionnelles. 60 fps.
+  > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
+
+- [ ] TASK-021 | host : README, avertissement chemins longs Windows
+  > Le README explique que la limite de 260 caractères casse MSBuild si le repo est cloné
+  > trop profond, et donne la solution (activer les chemins longs ou cloner près de la racine).
+  > Blocked by: —
 
 ## IN PROGRESS
 
