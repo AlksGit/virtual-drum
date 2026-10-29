@@ -11,7 +11,20 @@ namespace
 
 constexpr int kRefreshKitsId = 1000;
 constexpr int kOpenKitsFolderId = 1001;
+constexpr int kMidiOffId = 1;
+constexpr int kMidiRefreshId = 900;
+constexpr int kMidiFirstOutputId = 2;
 const char* const kKitSetting = "kit";
+const char* const kMidiSetting = "midiOutput";
+
+void styleSelector (juce::ComboBox& box)
+{
+    box.setWantsKeyboardFocus (false); // keep the keyboard shortcuts working
+    box.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xd010141c));
+    box.setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff27324a));
+    box.setColour (juce::ComboBox::textColourId, juce::Colour (0xffd8e0ee));
+    box.setColour (juce::ComboBox::arrowColourId, juce::Colour (0xff36c8ff));
+}
 
 std::unique_ptr<juce::PropertiesFile> openSettings()
 {
@@ -32,16 +45,19 @@ MainComponent::MainComponent (const juce::String& commandLine)
 
     // The kit list sits on top of the GL view: it has to be a child of that component.
     kitSelector.setTooltip ("Sound kit (K for the next one)");
-    kitSelector.setWantsKeyboardFocus (false); // keep the keyboard shortcuts working
-    kitSelector.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xd010141c));
-    kitSelector.setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff27324a));
-    kitSelector.setColour (juce::ComboBox::textColourId, juce::Colour (0xffd8e0ee));
-    kitSelector.setColour (juce::ComboBox::arrowColourId, juce::Colour (0xff36c8ff));
+    styleSelector (kitSelector);
     kitSelector.onChange = [this] { kitMenuChanged(); };
     sceneView.addAndMakeVisible (kitSelector);
 
     rebuildKitMenu();
     selectKit (kitLibrary.indexOf (settings->getValue (kKitSetting, synthKitName (SynthKit::studio))));
+
+    midiSelector.setTooltip ("Send every hit to a MIDI output (General MIDI drums, channel 10)");
+    styleSelector (midiSelector);
+    midiSelector.onChange = [this] { midiMenuChanged(); };
+    sceneView.addAndMakeVisible (midiSelector);
+    rebuildMidiMenu();
+    openMidiOutput (settings->getValue (kMidiSetting));
 
     setSize (1280, 720);
     setWantsKeyboardFocus (true);
@@ -75,6 +91,7 @@ MainComponent::~MainComponent()
     stopTimer();
     if (source != nullptr)
         source->stop(); // no listener call can happen after this returns
+    midiSender.close();
 }
 
 void MainComponent::startSource (const juce::String& commandLine)
@@ -117,6 +134,52 @@ void MainComponent::resized()
 {
     sceneView.setBounds (getLocalBounds());
     kitSelector.setBounds (sceneView.getWidth() - 12 - 240, 12, 240, 28);
+    midiSelector.setBounds (kitSelector.getBounds().translated (0, 34));
+}
+
+void MainComponent::rebuildMidiMenu()
+{
+    midiOutputs = MidiSender::availableOutputs();
+    midiSelector.clear (juce::dontSendNotification);
+    midiSelector.addItem ("MIDI out: off", kMidiOffId);
+    for (int i = 0; i < midiOutputs.size(); ++i)
+        midiSelector.addItem ("MIDI out: " + midiOutputs[i].name + (midiOutputs[i].isVirtual ? " (virtual port)" : ""),
+                              kMidiFirstOutputId + i);
+    midiSelector.addSeparator();
+    midiSelector.addItem ("Refresh MIDI outputs", kMidiRefreshId);
+
+    auto selected = kMidiOffId;
+    for (int i = 0; i < midiOutputs.size(); ++i)
+        if (midiOutputs[i].name == midiSender.currentName())
+            selected = kMidiFirstOutputId + i;
+    midiSelector.setSelectedId (selected, juce::dontSendNotification);
+}
+
+void MainComponent::openMidiOutput (const juce::String& name)
+{
+    midiSender.close();
+    for (const auto& output : midiOutputs)
+        if (name.isNotEmpty() && output.name == name)
+            midiSender.open (output);
+
+    settings->setValue (kMidiSetting, midiSender.currentName());
+    settings->saveIfNeeded();
+    rebuildMidiMenu();
+}
+
+void MainComponent::midiMenuChanged()
+{
+    const auto id = midiSelector.getSelectedId();
+    if (id == kMidiRefreshId)
+    {
+        const auto current = midiSender.currentName();
+        rebuildMidiMenu();
+        openMidiOutput (current);
+        return;
+    }
+
+    const auto index = id - kMidiFirstOutputId;
+    openMidiOutput (index >= 0 && index < midiOutputs.size() ? midiOutputs[index].name : juce::String());
 }
 
 void MainComponent::rebuildKitMenu()
@@ -200,7 +263,12 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
 void MainComponent::frameReceived (const protocol::Frame& frame)
 {
     if (const auto* hit = std::get_if<protocol::HitPacket> (&frame.packet))
-        audio.pushHit ({ nearestPad (Quat::fromQ14 (hit->quat)), static_cast<float> (hit->velocity) / 127.0f });
+    {
+        const auto pad = nearestPad (Quat::fromQ14 (hit->quat));
+        const auto velocity = static_cast<float> (hit->velocity) / 127.0f;
+        audio.pushHit ({ pad, velocity });
+        midiSender.sendHit (pad, velocity);
+    }
 
     sceneState.apply (frame, steadySeconds());
 }
@@ -221,6 +289,8 @@ void MainComponent::timerCallback()
         text << "   " << juce::String (juce::roundToInt (fakeSource->getTempo())) << " bpm (Up / Down)";
     text << "\n" << audioStatus << (audio.isMuted() ? "   [muted, M]" : "   (M to mute)");
     text << "\nKit: " << kitLibrary.kits()[static_cast<std::size_t> (currentKit)].name << "   (K for the next one)";
+    const auto midiName = midiSender.currentName();
+    text << "   MIDI out: " << (midiName.isEmpty() ? juce::String ("off") : midiName);
     text << "\nDrag to orbit, wheel to zoom, double-click to reset";
 
     sceneView.setOverlayText (text);

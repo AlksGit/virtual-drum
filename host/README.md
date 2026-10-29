@@ -64,6 +64,14 @@ Choose the kit in the list at the top right, or press K for the next one; the ch
 remembered. Built-in kits are synthesised (no audio files in the repository): Studio, Rock,
 Jazz (brushes), Electro 808.
 
+**MIDI out (play your own drum sounds in a DAW)**: pick an output in the second list at the top
+right. Every hit is sent as a General MIDI drum note on channel 10 (snare 38, closed hi-hat 42,
+toms 50 / 47 / 43, crash 49, ride 51), velocity 1-127, note off 30 ms later; the choice is
+remembered. On macOS the app offers a virtual port, "Virtual Drum", that any DAW can record from.
+On Windows, install a virtual MIDI cable such as loopMIDI and select it in the app and in the DAW
+("Microsoft GS Wavetable Synth" also works, with Windows' built-in drum sounds). Press M to mute
+the app's own sounds.
+
 **Your own samples**: choose "Open kits folder..." in the kit list (it creates
 `Documents/Virtual Drum/Kits`). Make one folder per kit, with one WAV, AIFF or FLAC file per pad
 named `hihat`, `snare`, `hightom`, `midtom`, `floortom`, `crash`, `ride` (aliases such as `hh`,
@@ -100,6 +108,7 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
   hits light the pads, send a ring across drum heads and make cymbals swing
 - `src/AudioEngine.*` — audio output (JUCE device manager) playing the sampler
 - `src/KitLibrary.*` — built-in and user sample kits
+- `src/MidiSender.*`, `src/core/MidiMapping.h` — General MIDI drum output
 - `src/core/` — no JUCE dependency, unit tested:
   - `Packets.*` — C++ view of `protocol.h`, encode / decode
   - `FrameParser.*` — incremental USB frame parser with resynchronisation
