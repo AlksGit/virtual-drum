@@ -31,14 +31,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Branch: feat/task-026-detection-prototype
   > Blocked by: —
 
-- [ ] TASK-027 | host : sortie MIDI vers un DAW
-  > L'app envoie chaque coup en note MIDI (General MIDI batterie : caisse claire 38, charleston
-  > fermée 42, toms 50/47/43, crash 49, ride 51), vélocité 1-127, sur une sortie choisie dans
-  > l'app (port virtuel créé sur Mac ; sous Windows, un port existant comme loopMIDI). Option
-  > pour couper le son interne. Choix mémorisé. Tests du mapping et des messages.
-  > Branch: feat/task-027-midi-out
-  > Blocked by: —
-
 - [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
   > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
   > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
@@ -55,6 +47,9 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-027 | host : sortie MIDI vers un DAW
+  > Merged in: devape (2026-10-29). Notes GM canal 10, vélocité 1-127, note off à 30 ms, sortie
+  > choisie dans l'app et mémorisée, port virtuel sur Mac. Vérifié avec le synthé GS de Windows.
 - [x] TASK-024 | host : sélecteur de kits de sons
   > Merged in: devape (2026-10-29). 4 kits synthétisés + kits de samples utilisateur, liste
   > déroulante + touche K, choix mémorisé, changement à chaud sûr. Vérifié dans l'app (kit de

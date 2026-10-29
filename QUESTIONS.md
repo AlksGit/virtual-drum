@@ -68,6 +68,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 - **Kits de sons (TASK-024)** : écouter Studio, Rock, Jazz, Électro 808 (liste en haut à droite
   ou touche K). Pour de vrais sons : « Open kits folder... », un dossier par kit avec
   `snare.wav`, `hihat.wav`, etc., puis « Refresh list ».
+- **MIDI (TASK-027)** : dans l'app, liste « MIDI out » (sous les kits). Pour tes sons dans un DAW
+  sous Windows : installer loopMIDI, créer un port, le choisir dans l'app et comme entrée MIDI du
+  DAW (piste batterie GM, canal 10). Test immédiat sans DAW : « Microsoft GS Wavetable Synth ».
 - **Son (TASK-018)** : écouter l'app avec le batteur simulé. Les sons sont synthétisés en code
   (caisse claire, toms, charleston, crash, ride) : à juger à l'oreille, avec la latence perçue.
   M coupe le son.
