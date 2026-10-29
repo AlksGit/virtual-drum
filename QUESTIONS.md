@@ -41,7 +41,7 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 
 - **Espace dans le chemin du repo** (`Personal work`) : Zephyr refuse les chemins avec espaces.
   — Défaut : build via `subst V:` (documenté dans `firmware/README.md`). — Plus simple à terme :
-  déplacer le repo dans un chemin sans espace (ex. `C:\devirtual-drum`) ; ton choix.
+  déplacer le repo dans un chemin sans espace (ex. `C:/dev/virtual-drum`) ; ton choix.
 
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
