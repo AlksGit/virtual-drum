@@ -14,14 +14,16 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
+## IN PROGRESS
 - [ ] TASK-025 | tools : téléchargement de kits de samples libres
   > Script qui télécharge 2-3 kits acoustiques libres (CC0 de préférence, sinon CC-BY) dans
   > le dossier de kits de l'utilisateur, renomme les fichiers par pad, affiche la licence et
   > l'attribution. Rien n'est commité dans le repo public. Testé (mapping, idempotence).
   > Demandé par l'utilisateur le 2026-10-29.
+  > + couches de vélocité dans l'app (un sample par niveau de frappe).
+  > Branch: feat/task-025-free-sample-kits
   > Blocked by: — (TASK-024 fait)
 
-## IN PROGRESS
 - [ ] TASK-028 | host : latence audio sous Windows (mode exclusif, ASIO optionnel)
   > Choix du type de sortie dans l'app : partagé, basse latence, exclusif (latence minimale, coupe
   > les autres applis). Support ASIO en option de build si le SDK Steinberg est fourni (licence à
