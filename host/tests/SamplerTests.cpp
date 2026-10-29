@@ -424,3 +424,13 @@ VDRUM_TEST (setSamplesDropsAStalePendingChange)
     sampler.render (queue, left.data(), right.data(), 8);
     CHECK (sampler.takeRetired() == nullptr); // no swap happened
 }
+
+VDRUM_TEST (aFullVoicePoolNeverCutsTheVoiceItJustReleased)
+{
+    Sampler sampler;
+    sampler.setSamples (constantBank (100000));
+    for (int i = 0; i < Sampler::kMaxVoices + 20; ++i) // pool full of fading ride voices
+        sampler.trigger (Pad::ride, 0.5f);
+    CHECK (sampler.activeVoiceCount() == Sampler::kMaxVoices);
+    CHECK (sampler.activeVoiceCount (Pad::ride) == Sampler::kMaxVoicesPerPad);
+}

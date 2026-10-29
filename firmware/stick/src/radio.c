@@ -120,8 +120,32 @@ int radio_start(uint8_t stick_id)
 	return err;
 }
 
+static void send_raw(void)
+{
+	raw.hdr.type = PKT_RAW;
+	raw.hdr.stick_id = stick;
+	raw.hdr.seq = take_seq();
+	raw.t0_us = raw_first_time;
+	send_payload(&raw, PKT_RAW_SIZE(raw.n));
+	raw.n = 0;
+}
+
 void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32_t first_time_us)
 {
+	/* A RAW packet holds consecutive samples at t0 + i / ODR. If this batch does not continue
+	 * the partial packet (time base resynchronised, samples skipped), send the partial packet
+	 * first: the protocol allows packets of fewer than RAW_MAX_SAMPLES samples. Half a period
+	 * of tolerance lets the small drift corrections through.
+	 */
+	if (raw.n > 0) {
+		const uint32_t expected = raw_first_time + raw.n * IMU_SAMPLE_PERIOD_US;
+		const int32_t error = (int32_t)(first_time_us - expected);
+
+		if (error > (int32_t)(IMU_SAMPLE_PERIOD_US / 2) || error < -(int32_t)(IMU_SAMPLE_PERIOD_US / 2)) {
+			send_raw();
+		}
+	}
+
 	for (uint32_t i = 0; i < count; i++) {
 		if (raw.n == 0) {
 			raw_first_time = first_time_us + i * IMU_SAMPLE_PERIOD_US;
@@ -129,12 +153,7 @@ void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32
 		raw.samples[raw.n++] = samples[i];
 
 		if (raw.n == RAW_MAX_SAMPLES) {
-			raw.hdr.type = PKT_RAW;
-			raw.hdr.stick_id = stick;
-			raw.hdr.seq = take_seq();
-			raw.t0_us = raw_first_time;
-			send_payload(&raw, PKT_RAW_SIZE(raw.n));
-			raw.n = 0;
+			send_raw();
 		}
 	}
 }

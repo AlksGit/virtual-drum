@@ -119,6 +119,7 @@ void Sampler::trigger (Pad pad, float velocity)
         return;
 
     // Too many voices on this pad: release its oldest one (fades out instead of a hard cut).
+    Voice* released = nullptr;
     if (activeVoiceCount (pad) >= kMaxVoicesPerPad)
     {
         Voice* oldest = nullptr;
@@ -128,9 +129,10 @@ void Sampler::trigger (Pad pad, float velocity)
                 oldest = &voice;
         if (oldest != nullptr)
             oldest->release = kReleaseSamples;
+        released = oldest;
     }
 
-    auto* target = findVoiceSlot();
+    auto* target = findVoiceSlot (released); // never the voice just released: it must fade
 
     float left = 0.0f, right = 0.0f;
     padPan (pad, left, right);
@@ -145,21 +147,26 @@ void Sampler::trigger (Pad pad, float velocity)
     target->release = 0;
 }
 
-Sampler::Voice* Sampler::findVoiceSlot()
+Sampler::Voice* Sampler::findVoiceSlot (const Voice* keep)
 {
-    // A free voice, else the oldest releasing one (already fading), else the oldest one.
+    // A free voice, else the oldest releasing one (already fading), else the oldest one;
+    // `keep` only as a last resort.
     Voice* oldestReleasing = nullptr;
-    Voice* oldest = &voices[0];
+    Voice* oldest = nullptr;
     for (auto& voice : voices)
     {
         if (voice.sample == nullptr)
             return &voice;
+        if (&voice == keep)
+            continue;
         if (voice.release > 0 && (oldestReleasing == nullptr || voice.age < oldestReleasing->age))
             oldestReleasing = &voice;
-        if (voice.age < oldest->age)
+        if (oldest == nullptr || voice.age < oldest->age)
             oldest = &voice;
     }
-    return oldestReleasing != nullptr ? oldestReleasing : oldest;
+    if (oldestReleasing != nullptr)
+        return oldestReleasing;
+    return oldest != nullptr ? oldest : &voices[0];
 }
 
 void Sampler::render (HitQueue& queue, float* left, float* right, int numSamples)

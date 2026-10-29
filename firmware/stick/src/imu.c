@@ -31,7 +31,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include <zephyr/sys/atomic.h>
+#include <zephyr/irq.h>
 
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
@@ -68,9 +68,16 @@ static imu_batch_cb batch_callback;
 static struct imu_stats stats;
 static stmdev_ctx_t ctx;
 
-/* Time of the last INT1 edge, and whether a drain has not used it yet. */
+/* Time of the last INT1 edge, and whether a drain has not used it yet (ISR writes, the IMU
+ * thread reads both under irq_lock so that they always belong together).
+ */
 static volatile uint32_t edge_time_us;
-static atomic_t edge_pending;
+static volatile bool edge_pending;
+
+/* End of the last FIFO read. An edge older than this was produced by samples that have been
+ * read since: the FIFO head has moved and that edge no longer locates it.
+ */
+static uint32_t last_read_end_us;
 
 /* Expected time of the oldest unread sample in the FIFO; valid once timing_known is set. */
 static uint32_t head_time_us;
@@ -104,7 +111,7 @@ static void int1_isr(const struct device *port, struct gpio_callback *cb, uint32
 	ARG_UNUSED(cb);
 	ARG_UNUSED(pins);
 	edge_time_us = (uint32_t)k_cyc_to_us_floor64(k_cycle_get_64());
-	atomic_set(&edge_pending, 1);
+	edge_pending = true;
 	k_sem_give(&fifo_ready);
 }
 
@@ -199,6 +206,11 @@ struct fifo_status {
  * lsm6ds3tr-c_reg.h (NCS v3.4.1): level = STATUS2[2:0] << 8 | STATUS1, overrun = STATUS2 bit 6,
  * pattern = STATUS4[1:0] << 8 | STATUS3. Register auto-increment (IF_INC) is set in configure().
  */
+static uint32_t now_us(void)
+{
+	return (uint32_t)k_cyc_to_us_floor64(k_cycle_get_64());
+}
+
 static int read_fifo_status(struct fifo_status *out)
 {
 	uint8_t reg[4];
@@ -210,20 +222,28 @@ static int read_fifo_status(struct fifo_status *out)
 	out->level = (uint16_t)(((reg[1] & 0x07u) << 8) | reg[0]);
 	out->overrun = (reg[1] & 0x40u) != 0;
 	out->pattern = (uint16_t)(((reg[3] & 0x03u) << 8) | reg[2]);
-	if (out->overrun) {
-		stats.fifo_overruns++;
-	}
 	return 0;
 }
 
 /* Updates head_time_us from a fresh INT1 edge, if any (see the timestamps note at the top). */
 static void track_edge(bool disrupted)
 {
-	if (!atomic_cas(&edge_pending, 1, 0)) {
+	const unsigned int key = irq_lock();
+	const bool pending = edge_pending;
+	const uint32_t edge = edge_time_us;
+
+	edge_pending = false;
+	irq_unlock(key);
+
+	if (!pending || (int32_t)(edge - last_read_end_us) < 0) {
+		/* No edge, or a stale one (raised during an earlier read of this drain). */
+		if (disrupted) {
+			timing_known = false; /* samples were lost: wait for a fresh edge */
+		}
 		return;
 	}
 
-	const uint32_t estimate = edge_time_us - (FIFO_THRESHOLD_SAMPLES - 1u) * IMU_SAMPLE_PERIOD_US;
+	const uint32_t estimate = edge - (FIFO_THRESHOLD_SAMPLES - 1u) * IMU_SAMPLE_PERIOD_US;
 	const int32_t error = (int32_t)(estimate - head_time_us);
 
 	if (!timing_known || disrupted || (uint32_t)abs(error) > SNAP_THRESHOLD_US) {
@@ -242,8 +262,10 @@ static int realign(struct fifo_status *status)
 
 		if (lsm6ds3tr_c_fifo_raw_data_get(&ctx, (uint8_t *)&discard, sizeof(discard)) != 0) {
 			stats.bus_errors++;
+			timing_known = false;
 			return -EIO;
 		}
+		last_read_end_us = now_us();
 		status->level--;
 		status->pattern = (uint16_t)((status->pattern + 1u) % WORDS_PER_SAMPLE);
 	}
@@ -264,6 +286,7 @@ static int read_samples(uint32_t available, bool order_known_at_start)
 			timing_known = false; /* unknown how much was consumed: resync on the next edge */
 			return -EIO;
 		}
+		last_read_end_us = now_us();
 
 		for (uint32_t i = 0; i < count; i++) {
 			const int16_t *w = &words[i * WORDS_PER_SAMPLE];
@@ -304,9 +327,13 @@ static void drain_fifo(void)
 		if (read_fifo_status(&status) != 0) {
 			return;
 		}
-		if (round == 0) {
-			track_edge(status.overrun || status.pattern != 0);
+		if (round == 0 && status.overrun) {
+			stats.fifo_overruns++; /* once per drain: the flag stays set over the rounds */
 		}
+		/* Every round: an edge raised while this drain read the FIFO is fresh only if it came
+		 * after the last read (checked in track_edge).
+		 */
+		track_edge(round == 0 && (status.overrun || status.pattern != 0));
 		if (realign(&status) != 0) {
 			return;
 		}

@@ -87,7 +87,7 @@ private:
         int release = 0;     // samples left in the release fade, 0 = not releasing
     };
 
-    Voice* findVoiceSlot();
+    Voice* findVoiceSlot (const Voice* keep);
 
     void applyPendingSwap();
 
