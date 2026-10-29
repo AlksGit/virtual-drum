@@ -53,6 +53,14 @@ Trame : `0xA5 0x5A | len u8 | rx_time_us u32 | rssi i8 | payload ESB (len octets
 Identifiants USB du récepteur (phase 0) : VID `0x2FE3` / PID `0x0100` (valeurs de dev par défaut
 de Zephyr), produit « Virtual Drum Receiver ». Les outils host détectent le port avec ces valeurs.
 
+### Trame de référence
+Vecteur de test partagé : tout parseur (C++, Python) doit la décoder à l'identique.
+HIT, stick 1, seq 0x1234, `t_us` 0x01020304, vélocité 100, quat (16384, −1, 0, 258), flags 0x01,
+`rx_time_us` 0xAABBCCDD, rssi −40 :
+```
+A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
+```
+
 ## Historique
 - v1 (2026-10) : définition du crc8 et de sa couverture, ordre w, x, y, z des quaternions,
   identifiants USB. `protocol.h` compilable sous MSVC.
