@@ -88,6 +88,7 @@ static int radio_init(void)
 	config.mode = ESB_MODE_PRX;
 	config.event_handler = esb_event;
 	config.selective_auto_ack = true;
+	config.use_fast_ramp_up = VDRUM_ESB_FAST_RAMP_UP; /* must match the sticks */
 
 	err = esb_init(&config);
 	err = err ? err : esb_set_rf_channel(VDRUM_ESB_RF_CHANNEL);

@@ -65,7 +65,7 @@ def make_raw(stick, seq, count, t0=1000):
     make_raw(1, 2, p.RAW_MAX_SAMPLES),
     p.HitPacket(p.Header(p.PKT_HIT, 0, 3), 99, 127, (1, -2, 3, -4), 3),
     p.OrientPacket(p.Header(p.PKT_ORIENT, 1, 4), 5, (16384, 0, 0, 0)),
-    p.StatusPacket(p.Header(p.PKT_STATUS, 0, 5), 3712, (-3, 0, 12), 4),
+    p.StatusPacket(p.Header(p.PKT_STATUS, 0, 5), 3712, (-3, 0, 12), 4, 65535, 2, 3, 4),
 ])
 def test_packets_round_trip(packet):
     assert p.decode_packet(p.encode_packet(packet)) == packet
@@ -76,7 +76,7 @@ def test_sizes_match_the_c_structs():
     assert len(p.encode_packet(make_raw(0, 0, 8))) == 105
     assert len(p.encode_packet(p.HitPacket(p.Header(2, 0, 0), 0, 1, (0, 0, 0, 0), 0))) == 18
     assert len(p.encode_packet(p.OrientPacket(p.Header(3, 0, 0), 0, (0, 0, 0, 0)))) == 16
-    assert len(p.encode_packet(p.StatusPacket(p.Header(4, 0, 0), 0, (0, 0, 0), 0))) == 13
+    assert len(p.encode_packet(p.StatusPacket(p.Header(4, 0, 0), 0, (0, 0, 0), 0))) == 21
 
 
 def test_raw_sample_count_is_validated():
@@ -136,3 +136,12 @@ def test_matches_the_cpp_parser_on_a_trailing_sync_byte():
     assert parser.feed(REFERENCE_FRAME[:1]) == []
     assert len(parser.feed(REFERENCE_FRAME[1:])) == 1
     assert parser.stats.discarded_bytes == 0
+
+
+def test_table_crc_matches_the_bitwise_reference():
+    import random
+    rng = random.Random(4)
+    for length in (0, 1, 7, 105, 114):
+        data = bytes(rng.randrange(256) for _ in range(length))
+        assert p.crc8(data) == p.crc8_bitwise(data)
+    assert p.crc8(b"123456789") == 0xF4

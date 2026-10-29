@@ -63,6 +63,11 @@ struct StatusPacket
     std::uint16_t vbatMv = 0;
     std::array<std::int16_t, 3> gyroBias {};
     std::uint8_t fwVersion = 0;
+    // Cumulative counters since boot, wrapping at 2^16 (protocol v4).
+    std::uint16_t txRetries = 0;
+    std::uint16_t txFailed = 0;
+    std::uint16_t txQueueFull = 0;
+    std::uint16_t imuOverruns = 0;
 };
 
 using Packet = std::variant<RawPacket, HitPacket, OrientPacket, StatusPacket>;

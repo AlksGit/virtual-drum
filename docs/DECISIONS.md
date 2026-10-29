@@ -68,3 +68,11 @@ Format : date — décision — pourquoi — alternatives écartées.
   dans le sampler (`<pad>_v<N>`, normalisées ensemble pour garder la dynamique enregistrée).
   — Repo public : CC0 évite toute obligation d'attribution ou de partage ; le script garde le
   repo léger. Écartés : Salamander (CC-BY-SA, archive de 387 Mo), samples commités dans le repo.
+- **2026-10** — Revue experte avant hardware (TASK-029) :
+  - délais de retransmission ESB **500 µs (baguette 0) et 1250 µs (baguette 1)**. ESB refuse
+    moins de 435 µs (`RETRANSMIT_DELAY_MIN`, l'init échouait avec 250/340 µs), et l'écart doit
+    dépasser un échange complet (~0,7 ms) pour que deux paquets en collision ne se retouchent pas ;
+  - **montée radio rapide** (40 µs) des deux côtés, hypothèse déjà faite par le calcul de charge ;
+  - **pas d'USB sur les baguettes** (console CDC activée par défaut par la carte) : flash 64 → 39 Ko,
+    RAM 21 → 12 Ko ; l'USB-C charge toujours, le bootloader UF2 est intact ;
+  - compteurs radio et IMU dans STATUS (protocole v4) pour les mesures de TASK-012.
