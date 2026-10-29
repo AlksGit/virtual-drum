@@ -99,7 +99,7 @@ float visibilitySmithGGX (float NoV, float NoL, float a)
 
 vec3 fresnelSchlick (vec3 f0, float cosTheta)
 {
-    return f0 + (1.0 - f0) * pow (1.0 - cosTheta, 5.0);
+    return f0 + (1.0 - f0) * pow (clamp (1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 // Analytic approximation of the split-sum environment BRDF (Karis).
@@ -125,17 +125,18 @@ vec3 environment (vec3 d, float rough)
     colour += softbox * vec3 (1.6, 1.55, 1.5) * (1.0 - 0.7 * blur);
 
     // Below the horizon: the rug lit by the spot, as seen in chrome and cymbals.
-    float floorPool = smoothstep (-0.05, -0.30, d.z) * smoothstep (-0.95, -0.55, d.z) * (1.0 - 0.3 * blur);
+    float floorPool = (1.0 - smoothstep (-0.30, -0.05, d.z)) * smoothstep (-0.95, -0.55, d.z) * (1.0 - 0.3 * blur);
     colour += floorPool * vec3 (0.09, 0.085, 0.095);
 
     // A soft warm band around the horizon (distant room lights), so chrome has something to show.
-    float horizon = exp (-pow ((d.z - 0.06) / (0.035 + 0.4 * blur), 2.0));
+    float t = (d.z - 0.06) / (0.035 + 0.4 * blur);
+    float horizon = exp (-t * t); // not pow (x, 2.0): pow is undefined for x < 0
     colour += horizon * vec3 (0.85, 0.80, 0.72) * (1.0 - 0.7 * blur);
 
     float azimuth = atan (d.y, d.x);
-    float band = smoothstep (-0.05, 0.10, d.z) * smoothstep (0.75, 0.45, d.z);
-    float left = smoothstep (0.07 + blur, 0.0, abs (azimuth - 0.95)) * band;
-    float right = smoothstep (0.07 + blur, 0.0, abs (azimuth + 0.95)) * band;
+    float band = smoothstep (-0.05, 0.10, d.z) * (1.0 - smoothstep (0.45, 0.75, d.z));
+    float left = (1.0 - smoothstep (0.0, 0.07 + blur, abs (azimuth - 0.95))) * band;
+    float right = (1.0 - smoothstep (0.0, 0.07 + blur, abs (azimuth + 0.95))) * band;
     colour += (left * vec3 (0.10, 0.85, 1.40) + right * vec3 (1.40, 0.18, 0.95)) * (1.2 - blur);
     return colour;
 }
@@ -225,7 +226,7 @@ void main()
         float r = length (localPosition.xy) / patternScale;
         float weave = 0.5 + 0.5 * sin (localPosition.x * 700.0) * sin (localPosition.y * 700.0);
         albedo *= 0.80 + 0.30 * weave + 0.25 * valueNoise (localPosition * 12.0);
-        float ring = smoothstep (0.012, 0.0, abs (r - 0.93));
+        float ring = (1.0 - smoothstep (0.0, 0.012, abs (r - 0.93)));
         albedo = mix (albedo, vec3 (0.02, 0.30, 0.42), ring);
     }
 
@@ -258,7 +259,7 @@ void main()
     // Clear coat: a thin glossy dielectric layer on top (lacquer, varnish).
     if (coat > 0.0)
     {
-        float fc = 0.04 + 0.96 * pow (1.0 - NoV, 5.0);
+        float fc = 0.04 + 0.96 * pow (clamp (1.0 - NoV, 0.0, 1.0), 5.0);
         vec3 h = normalize (v + l);
         float coatSpecular = distributionGGX (max (dot (n, h), 0.0), 0.03) * visibilitySmithGGX (NoV, max (dot (n, l), 0.0), 0.03) * 0.04;
         colour = colour * (1.0 - coat * fc)
@@ -298,7 +299,8 @@ void main()
 
 inline const char* const kTonemapFragment = R"(#version 410 core
 uniform sampler2D hdrImage;
-uniform vec2 resolution;
+uniform vec2 resolution; // size of the view in pixels
+uniform vec2 imageScale; // fraction of the HDR texture covered by the view
 uniform float exposure;
 
 out vec4 fragColour;
@@ -311,9 +313,9 @@ vec3 acesFilm (vec3 x)
 void main()
 {
     vec2 uv = gl_FragCoord.xy / resolution;
-    vec3 colour = acesFilm (texture (hdrImage, uv).rgb * exposure);
+    vec3 colour = acesFilm (texture (hdrImage, uv * imageScale).rgb * exposure);
 
-    float vignette = smoothstep (1.05, 0.30, length ((uv - 0.5) * vec2 (1.0, 0.8)) * 1.3);
+    float vignette = (1.0 - smoothstep (0.30, 1.05, length ((uv - 0.5) * vec2 (1.0, 0.8)) * 1.3));
     colour *= mix (0.72, 1.0, vignette);
 
     colour = pow (colour, vec3 (1.0 / 2.2));

@@ -78,13 +78,14 @@ private:
     std::unique_ptr<juce::OpenGLShaderProgram> sceneProgram, shadowProgram, tonemapProgram;
     SceneUniforms sceneUniforms;
     int shadowModel = -1, shadowLightViewProjection = -1;
-    int tonemapImage = -1, tonemapResolution = -1, tonemapExposure = -1;
+    int tonemapImage = -1, tonemapResolution = -1, tonemapImageScale = -1, tonemapExposure = -1;
 
     juce::uint32 emptyVertexArray = 0;
     juce::uint32 shadowFramebuffer = 0, shadowTexture = 0;
     juce::uint32 msaaFramebuffer = 0, msaaColour = 0, msaaDepth = 0;
     juce::uint32 resolveFramebuffer = 0, resolveTexture = 0;
-    int targetWidth = 0, targetHeight = 0;
+    int targetWidth = 0, targetHeight = 0; // allocated size (grows only, see ensureTargets)
+    int viewWidth = 0, viewHeight = 0;     // part of the targets used this frame
     bool ready = false;
 };
 

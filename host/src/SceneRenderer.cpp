@@ -140,6 +140,7 @@ bool SceneRenderer::create (const KitModel& model)
     shadowLightViewProjection = static_cast<int> (glGetUniformLocation (shadowProgram->getProgramID(), "lightViewProjection"));
     tonemapImage = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "hdrImage"));
     tonemapResolution = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "resolution"));
+    tonemapImageScale = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "imageScale"));
     tonemapExposure = static_cast<int> (glGetUniformLocation (tonemapProgram->getProgramID(), "exposure"));
 
     kit = model;
@@ -197,8 +198,17 @@ void SceneRenderer::releaseTargets()
 
 bool SceneRenderer::ensureTargets (int width, int height)
 {
-    if (width == targetWidth && height == targetHeight && msaaFramebuffer != 0)
+    viewWidth = width;
+    viewHeight = height;
+
+    // Grow-only, in steps of 256 pixels: a live window resize then reallocates a few times
+    // instead of at every step (the 4x HDR targets are large on Retina screens).
+    if (msaaFramebuffer != 0 && width <= targetWidth && height <= targetHeight)
         return true;
+
+    const auto roundUp = [] (int value) { return (value + 255) / 256 * 256; };
+    width = roundUp (juce::jmax (width, targetWidth));
+    height = roundUp (juce::jmax (height, targetHeight));
 
     releaseTargets();
 
@@ -240,6 +250,7 @@ bool SceneRenderer::ensureTargets (int width, int height)
     {
         DBG ("HDR framebuffer incomplete");
         releaseTargets();
+        ready = false; // do not retry (and log) at every frame
         return false;
     }
 
@@ -328,7 +339,7 @@ void SceneRenderer::drawShadowPass (const Mat4& lightViewProjection)
 void SceneRenderer::drawScenePass (const Mat4& viewProjection, const Mat4& lightViewProjection, Vec3 eye)
 {
     glBindFramebuffer (GL_FRAMEBUFFER, msaaFramebuffer);
-    glViewport (0, 0, targetWidth, targetHeight);
+    glViewport (0, 0, viewWidth, viewHeight);
     glClearColor (kBackground.x, kBackground.y, kBackground.z, 1.0f);
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -378,7 +389,7 @@ void SceneRenderer::drawTonemapPass (int width, int height)
     // Resolve the multisampled HDR image, then tone map it into JUCE's framebuffer.
     glBindFramebuffer (GL_READ_FRAMEBUFFER, msaaFramebuffer);
     glBindFramebuffer (GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
-    glBlitFramebuffer (0, 0, targetWidth, targetHeight, 0, 0, targetWidth, targetHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer (0, 0, viewWidth, viewHeight, 0, 0, viewWidth, viewHeight, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     glBindFramebuffer (GL_FRAMEBUFFER, context.getFrameBufferID());
     glViewport (0, 0, width, height);
@@ -389,6 +400,8 @@ void SceneRenderer::drawTonemapPass (int width, int height)
     glBindTexture (GL_TEXTURE_2D, resolveTexture);
     glUniform1i (tonemapImage, 0);
     glUniform2f (tonemapResolution, static_cast<float> (width), static_cast<float> (height));
+    glUniform2f (tonemapImageScale, static_cast<float> (viewWidth) / static_cast<float> (targetWidth),
+                 static_cast<float> (viewHeight) / static_cast<float> (targetHeight));
     glUniform1f (tonemapExposure, kExposure);
 
     glBindVertexArray (emptyVertexArray);
