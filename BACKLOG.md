@@ -64,12 +64,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-015 | host : générateur de fausses données réalistes
-  > Deux baguettes, ORIENT ~100 Hz, coups HIT à vélocité variée sur plusieurs zones,
-  > pattern rythmique (groove, tempo réglable). Produit des trames binaires au vrai
-  > format pour passer par le vrai parseur.
-  > Blocked by: TASK-014 (interface source + format)
-
 - [ ] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
   > Kit en 3D (OpenGL 4.1 Core) : caisse claire, toms, cymbales, charleston, en géométrie
   > générée en code (cylindres, disques) en attendant de vrais modèles. Les deux baguettes
@@ -95,15 +89,19 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-014 | host : parseur protocole + source de données abstraite
-  > Parseur des trames USB CDC et des paquets HIT / ORIENT / STATUS de protocol.h
-  > (resync 0xA5 0x5A, vérif crc8). Interface « source » unique, deux implémentations :
-  > port série et fausses données. Tests unitaires du parseur.
-  > Branch: feat/task-014-protocol-parser
-  > Blocked by: TASK-013 (projet host)
+- [ ] TASK-015 | host : générateur de fausses données réalistes
+  > Deux baguettes, ORIENT ~100 Hz, coups HIT à vélocité variée sur plusieurs zones,
+  > pattern rythmique (groove, tempo réglable). Produit des trames binaires au vrai
+  > format pour passer par le vrai parseur.
+  > Branch: feat/task-015-fake-drummer
+  > Blocked by: TASK-014 (interface source + format)
+
 ## ON HOLD
 
 ## DONE
+- [x] TASK-014 | host : parseur protocole + source de données abstraite
+  > Merged in: devape (2026-10-29). Protocole v1 (crc8 spécifié, USB IDs), 17 tests, CI verte
+  > Windows + macOS. Source série non validée sur cible (hardware). Source fausses données : TASK-015.
 - [x] TASK-022 | CI GitHub Actions : build host Windows + macOS
   > Merged in: devape (2026-10-29). CI verte Windows + macOS.
 - [x] TASK-017 | Mise à jour roadmap et décisions (app avancée en phase 0)

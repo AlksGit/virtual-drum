@@ -25,3 +25,7 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 
 ## À tester avec le hardware
 (étapes de validation sur cible)
+- **Lien USB (TASK-014)** : brancher le récepteur, lancer `vdrum_monitor --list` puis `vdrum_monitor` :
+  le port doit être détecté (VID/PID 2FE3:0100), les débits par baguette affichés, 0 crc_errors.
+  Débrancher pendant la lecture : le monitor doit afficher « Source stopped » sans planter.
+  À faire sur PC **et** sur Mac (le code de lecture macOS n'a jamais tourné sur un vrai port).
