@@ -29,16 +29,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Branch: feat/task-028-audio-latency
   > Blocked by: —
 
-- [ ] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
-  > Simulateur d'IMU (gyro + accéléro dans le repère baguette, bruit, saturation ±2000 dps,
-  > choc à l'impact) avec vérité terrain ; détecteur (pic de vitesse angulaire + décélération,
-  > période réfractaire) et estimation de vélocité avant le pic ; métriques : faux positifs /
-  > négatifs, latence de détection, corrélation de vélocité. Tests pytest. Sert de base à la
-  > phase 1 sur données réelles.
-  > Branch: feat/task-026-detection-prototype
-  > Blocked by: —
-
-## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
   > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
@@ -48,6 +38,10 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
+  > Merged in: devape (2026-10-29). Simulation réaliste : rappel ~99 %, précision ~98,5 %,
+  > corrélation de vélocité 0,995, déclenchement ~8 ms avant l'arrêt. Seuil 260 dps (compromis
+  > notes fantômes / gestes parasites, à régler sur données réelles). CLI aussi sur CSV réels.
 - [x] TASK-027 | host : sortie MIDI vers un DAW
   > Merged in: devape (2026-10-29). Notes GM canal 10, vélocité 1-127, note off à 30 ms, sortie
   > choisie dans l'app et mémorisée, port virtuel sur Mac. Vérifié avec le synthé GS de Windows.
