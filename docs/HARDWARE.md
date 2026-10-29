@@ -17,14 +17,40 @@ Batteries : LiPo 3,7 V ~100–150 mAh (en stock au bureau, à vérifier : capaci
 ## Points à vérifier AVANT d'écrire le code (ne pas deviner)
 Sources : devicetree Zephyr de la board `xiao_ble` (`boards/seeed/xiao_ble/` dans Zephyr),
 schéma et wiki Seeed « XIAO nRF52840 (Sense) », datasheet LSM6DS3TR-C.
-- [ ] Nom exact de la board pour la version de NCS installée (`west boards | grep xiao`).
-- [ ] Bus et adresse I²C de l'IMU, et GPIO d'**alimentation de l'IMU** (l'IMU de la Sense est
-      alimenté par une broche du nRF qu'il faut activer) — lire le devicetree, ne pas supposer.
-- [ ] Broche d'interruption de l'IMU (INT1) : est-elle câblée au nRF ? Sinon, polling FIFO sur timer.
-- [ ] Mesure tension batterie : diviseur + broche d'activation. **Lire l'avertissement du wiki Seeed
-      sur cette broche avant de la piloter** (mauvaise config = risque pour l'entrée ADC).
-- [ ] Courant de charge (chargeur BQ25101, sélection par une broche) : adapter à la capacité de la LiPo.
-- [ ] Layout flash avec le bootloader UF2 d'origine (offset de partition applicatif) — garder le bootloader.
+- [x] Nom exact de la board (NCS v3.4.1) : `xiao_ble/nrf52840` (récepteur) et
+      `xiao_ble/nrf52840/sense` (baguettes). Source : `west boards`, `zephyr/boards/seeed/xiao_ble/board.yml`.
+- [x] IMU : bus `i2c0` (TWIM), adresse **0x6A**, SDA **P0.07**, SCL **P0.27**, 400 kHz
+      (`I2C_BITRATE_FAST`), pilote Zephyr `st,lsm6dsl`. **Alimentation de l'IMU : P1.08** (actif haut),
+      régulateur `lsm6ds3tr-c-en` avec `regulator-boot-on` et 3 ms de démarrage : Zephyr l'active
+      au boot. Source : `xiao_ble_nrf52840_sense.dts`, `xiao_ble-pinctrl.dtsi`.
+      Débit I²C : 1666 Hz × 12 o ≈ 20 ko/s, soit environ la moitié des ~44 ko/s utiles à 400 kHz.
+      Lire la FIFO par rafales (pas échantillon par échantillon). Le TWIM du nRF52840 est spécifié
+      jusqu'à 400 kHz : pas de marge pour 3,33 kHz sur I²C.
+- [x] INT1 : câblée au nRF sur **P0.11** (`irq-gpios`, actif haut). Interruption FIFO watermark possible.
+      Source : `xiao_ble_nrf52840_sense.dts`.
+- [x] Mesure batterie : entrée ADC **P0.31** (AIN7), chemin activé en mettant **P0.14 à l'état bas**.
+      ⚠️ Wiki Seeed : « When P0.14 is set HIGH, the battery voltage reading path is disabled and
+      P0.31 may reach the input voltage limit of 3.6V, posing a risk of damaging the P0.31 pin »,
+      et « avoid setting P0.14 HIGH during battery charging ». → **Garder P0.14 à l'état bas en
+      permanence.** Le ratio du diviseur n'est pas donné par le wiki ni le devicetree : **à lire sur
+      le schéma Seeed avant d'écrire la conversion** (non deviné). Source : wiki Seeed XIAO BLE.
+- [x] Charge : chargeur **BQ25101**, courant choisi par **P0.13** : entrée haute impédance sans pull
+      → **50 mA**, sortie à l'état bas → **100 mA** (phase courant constant). Défaut sûr : 50 mA ;
+      100 mA seulement si la LiPo accepte ≥ 1 C (capacité à confirmer). Source : wiki Seeed XIAO BLE.
+- [x] Flash avec le bootloader UF2 (Adafruit nRF52, SoftDevice s140 v7 réservée) : application à
+      **0x27000** (taille 0xC5000), settings à 0xEC000, UF2 à 0xF4000. `CONFIG_BUILD_OUTPUT_UF2=y`
+      est déjà le défaut de la board. Source : `pm_static.yml`, `xiao_ble_defconfig`.
+
+## LSM6DS3TR-C — valeurs vérifiées
+Source : pilote ST livré avec NCS v3.4.1 (`modules/hal/st/sensor/stmemsc/lsm6ds3tr-c_STdC/driver`).
+| Paramètre | Valeur |
+|---|---|
+| Sensibilité accéléro ±16 g | 0,488 mg/LSB (`lsm6ds3tr_c_from_fs16g_to_mg`) |
+| Sensibilité accéléro ±8 g | 0,244 mg/LSB |
+| Sensibilité gyro ±2000 dps | 70 mdps/LSB (`lsm6ds3tr_c_from_fs2000dps_to_mdps`) |
+| WHO_AM_I | registre 0x0F, valeur 0x6A |
+| ODR disponibles (extrait) | 1,66 kHz, 3,33 kHz, 6,66 kHz (accéléro et gyro) |
+| Taille de la FIFO | à vérifier dans la datasheet (non confirmé ici) |
 
 ## Flash / debug
 - UF2 : double-tap sur reset → disque USB → copier `zephyr.uf2`.
