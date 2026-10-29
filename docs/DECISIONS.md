@@ -34,3 +34,22 @@ Format : date — décision — pourquoi — alternatives écartées.
   Risque connu : OpenGL est déprécié sur macOS (gelé en 4.1 mais fonctionnel) ; si Apple le
   retire, porter le rendu vers Metal ou passer par une couche de traduction.
   Écarté : UI hybride (WebView JUCE + three.js), plus rapide pour le visuel mais deux langages.
+- **2026-10** — Paquets RAW : **payload ESB dynamique (DPL), 8 échantillons par paquet**
+  (105 octets), soit un paquet toutes les 4,8 ms par baguette à 1,66 kHz. — Calcul de temps
+  d'antenne (2 Mbit/s, préambule 2 o, adresse 5 o, PCF 10 bits, CRC 2 o, ACK vide, montée
+  radio 40 µs, retournement ~150 µs), pour 2 baguettes :
+
+  | Échantillons / paquet | Payload | Charge radio |
+  |---|---|---|
+  | 1 | 21 o | 119 % (impossible) |
+  | 4 | 57 o | 42 % |
+  | 8 | 105 o | 29 % |
+  | 16 | 201 o | 22 % |
+
+  Au-delà de 8, le gain est faible et chaque retransmission coûte plus cher. Le flux brut seul
+  occupe ~16 % du débit (2 × 1666 × 12 o). Écarté : 1 échantillon par paquet statique de 32 o.
+  **Risque à mesurer (TASK-012)** : les deux baguettes émettent sans coordination ; chacune occupe
+  ~10 % de l'air, donc ~20 % de ses paquets risquent une collision et une retransmission. Mesures
+  prévues : délais de retransmission ESB différents par baguette ; si les pertes restent
+  significatives, synchronisation par créneaux via les payloads d'ACK du récepteur. Le flux RAW
+  n'existe qu'en phase 0 ; en jeu (HIT + ORIENT 100 Hz) la charge est faible.
