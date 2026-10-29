@@ -39,10 +39,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis pour : validation USB.
   > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
 
-- [ ] TASK-010 | tools/plot_session.py : courbes accel/gyro + marquage saturation
-  > Plots par axe depuis un CSV, échantillons saturés surlignés, stats de pertes.
-  > Blocked by: TASK-009 (format CSV)
-
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
@@ -53,17 +49,21 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
-- [ ] TASK-018 | host : sampler basique
-  > Un sample par zone, volume selon la vélocité. Sortie CoreAudio (Mac) / ASIO (Windows),
-  > buffer 64 @ 48 kHz ; sortie Windows par défaut acceptée en attendant le SDK ASIO.
-  > Déclenché par les HIT, fausses données comprises.
-  > Blocked by: TASK-014 (réception des HIT) ; indépendant de la vue 3D
-
-- [ ] TASK-019 | host : éclairage et matériaux
-  > Éclairage type PBR : chrome pour cymbales et métal, peau mate pour les fûts.
-  > Direction artistique sombre avec accents néon. Modèles glTF sous licence libre
-  > (CC0 de préférence) pour remplacer la géométrie générée. 60 fps.
+- [ ] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
+  > Shader PBR (GGX, metallic/roughness) ; éclairage studio : lumière principale avec ombres
+  > portées (shadow map, PCF), contre-jours néon cyan/magenta, environnement procédural pour
+  > les reflets (cymbales, chrome) ; rendu HDR + tone mapping filmique (ACES), MSAA.
+  > Matériaux : laque avec vernis (fûts), chrome, bronze avec rainures de tournage (cymbales),
+  > peaux sablées, bois (baguettes). Direction artistique sombre, accents néon. 60 fps.
+  > Vérification par captures avant/après.
   > Blocked by: TASK-016 (scène à éclairer)
+
+- [ ] TASK-023 | host : modèles procéduraux détaillés du kit
+  > Remplace les cylindres par des modèles détaillés générés en code : cercles et griffes,
+  > tirants et coquilles, peaux de frappe, pieds tripodes télescopiques, support de charleston,
+  > perches de cymbales, grosse caisse (décorative en attendant les pédales), siège, tapis.
+  > Aucun fichier externe (repo public, pas de licence à gérer). 60 fps.
+  > Blocked by: TASK-019 (les matériaux définissent l'apparence des pièces)
 
 - [ ] TASK-020 | host : bloom et animations au coup
   > Un HIT déclenche un flash avec halo (bloom) sur le pad visé, intensité selon la
@@ -74,6 +74,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
 ## ON HOLD
 
 ## DONE
+- [x] TASK-010 | tools/plot_session.py : courbes accel/gyro + marquage saturation
+  > Merged in: devape (2026-10-29). Tracés bruts accel/gyro par baguette, saturation marquée,
+  > pertes surlignées, stats par baguette. 5 tests.
+- [x] TASK-018 | host : sampler basique
+  > Merged in: devape (2026-10-29). 24 voix, sons synthétisés (pas de fichiers), courbe de
+  > vélocité, panoramique, file sans verrou. 13 tests. Sur le PC : WASAPI basse latence mais
+  > le pilote Realtek impose 480 échantillons (~20 ms) : ASIO nécessaire pour la cible.
 - [x] TASK-009 | tools/logger.py : série → CSV par session
   > Merged in: devape (2026-10-29). Parseur Python identique au C++ (constantes vérifiées contre
   > protocol.h), CSV par session, rejeu de captures. 35 tests, CI Linux/Windows/macOS.

@@ -21,8 +21,20 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   2 baguettes à 1,66 kHz). — Rien de bloqué. — Si tu préfères une autre ODR ou un autre lot,
   c'est une constante (`RAW_MAX_SAMPLES`) ; le calcul est dans DECISIONS.md.
 
+- **Design de la batterie** (suite à ton message) : TASK-019 recentrée sur un rendu physique
+  complet (PBR, ombres, reflets, HDR) et **nouvelle TASK-023** pour des modèles détaillés
+  générés en code, au lieu de télécharger des modèles glTF. — Défaut pris : procédural. —
+  Raison : contrôle total du rendu, aucune licence à gérer dans un repo public, pas de
+  dépendance. Si tu préfères de vrais modèles (Blender ou téléchargés), dis-le.
+- **Latence audio sur le PC (TASK-018)** : le pilote Realtek n'accepte pas moins de 480
+  échantillons (~20 ms) en mode partagé, même en mode basse latence. — Défaut : on garde ça
+  pour l'instant (le Mac avec CoreAudio devrait faire 64). — Pour la cible < 10 ms sous
+  Windows : ASIO (ASIO4ALL + SDK Steinberg à compiler dans JUCE, à acter), ou une option
+  « mode exclusif » (coupe le son des autres applis). Ton choix ?
+
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
+- TASK-023 : modèles procéduraux détaillés du kit.
 - TASK-022 : CI GitHub Actions (build host Windows + macOS).
 
 ## À tester par toi
@@ -31,6 +43,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   (60 fps, flashs, baguettes qui bougent, flèches pour le tempo). À juger par toi : le rendu
   général, la sensation de la caméra (glisser / molette / double-clic), et **le lancement sur
   le Mac** (le build Mac passe en CI mais l'app n'y a jamais tourné).
+- **Son (TASK-018)** : écouter l'app avec le batteur simulé. Les sons sont synthétisés en code
+  (caisse claire, toms, charleston, crash, ride) : à juger à l'oreille, avec la latence perçue.
+  M coupe le son.
 
 ## À tester avec le hardware
 (étapes de validation sur cible)
