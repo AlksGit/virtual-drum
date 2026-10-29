@@ -58,3 +58,8 @@ Format : date — décision — pourquoi — alternatives écartées.
   la plus récente, carte `xiao_ble` (variante `sense`) supportée avec le partitionnement UF2.
   Installée sans changer la toolchain par défaut ni l'enregistrement CMake global, pour ne pas
   perturber d'autres projets NCS (v2.3.0 / v2.5.0) présents sur le PC.
+- **2026-10** — Latence audio sous Windows : **mode exclusif WASAPI** proposé dans l'app (mesuré
+  ~9 ms au lieu de ~20 ms en partagé sur le PC Realtek), jamais choisi par défaut car il coupe le
+  son des autres applications. **ASIO en option de build** (`VDRUM_ASIO_SDK_DIR`) : le SDK
+  Steinberg n'est ni téléchargé ni commité, sa licence doit être acceptée par l'utilisateur.
+  Écarté : ASIO obligatoire (dépendance propriétaire pour tout le monde).

@@ -27,8 +27,17 @@ public:
     AudioEngine();
     ~AudioEngine() override;
 
-    // Opens the default output device. Returns an error message, or an empty string.
-    juce::String start();
+    // Opens the default output device with the given driver type ("Windows Audio (Exclusive
+    // Mode)", "ASIO", "CoreAudio"...), or the lowest-latency one available when empty or
+    // unavailable. Returns an error message, or an empty string.
+    juce::String start (const juce::String& preferredDriverType = {});
+
+    // Driver types this machine offers, and the one in use (message thread).
+    juce::StringArray availableDriverTypes();
+    juce::String currentDriverType() const;
+
+    // Switches to another driver type while running. Returns an error message, or empty.
+    juce::String setDriverType (const juce::String& typeName);
 
     // Producer side: call from the data source thread only.
     // Hits arriving while no audio is running are dropped, so that they cannot pile up and
@@ -53,6 +62,7 @@ private:
     void audioDeviceStopped() override;
     void timerCallback() override;
     void submitKit();
+    juce::String useSmallestBuffer();
 
     juce::AudioDeviceManager deviceManager;
     Sampler sampler;
