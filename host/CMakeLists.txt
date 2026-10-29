@@ -67,7 +67,8 @@ add_executable(vdrum_tests
     tests/FakeSourceTests.cpp
     tests/SceneTests.cpp
     tests/SamplerTests.cpp
-    tests/KitModelTests.cpp)
+    tests/KitModelTests.cpp
+    tests/MidiTests.cpp)
 
 target_link_libraries(vdrum_tests
     PRIVATE
@@ -99,7 +100,8 @@ target_sources(VirtualDrum
         src/SceneView.cpp
         src/SceneRenderer.cpp
         src/AudioEngine.cpp
-        src/KitLibrary.cpp)
+        src/KitLibrary.cpp
+        src/MidiSender.cpp)
 
 target_compile_definitions(VirtualDrum
     PRIVATE

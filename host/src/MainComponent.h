@@ -4,6 +4,7 @@
 #include "DataSource.h"
 #include "FakeDataSource.h"
 #include "KitLibrary.h"
+#include "MidiSender.h"
 #include "SceneState.h"
 #include "SceneView.h"
 
@@ -23,7 +24,8 @@ namespace vdrum
 // --no-audio disables the sound output.
 // Without options the receiver is used when detected, the simulated drummer otherwise.
 // Keys: Up / Down change the tempo of the simulated drummer, M mutes the sound, K selects the
-// next sound kit (also in the kit list, top right).
+// next sound kit (also in the kit list, top right). The MIDI list under it sends every hit to a
+// MIDI output as General MIDI drum notes (for a DAW).
 class MainComponent final : public juce::Component,
                             private DataSource::Listener,
                             private juce::Timer
@@ -48,11 +50,19 @@ private:
     void selectKit (int index);
     void kitMenuChanged();
 
+    // MIDI output.
+    void rebuildMidiMenu();
+    void midiMenuChanged();
+    void openMidiOutput (const juce::String& name);
+
     SceneState sceneState;
     SceneView sceneView { sceneState };
     KitLibrary kitLibrary;                  // before `audio`, whose kit factory uses it
     AudioEngine audio;
     juce::ComboBox kitSelector;
+    MidiSender midiSender;
+    juce::ComboBox midiSelector;
+    juce::Array<MidiSender::Output> midiOutputs; // as listed in midiSelector
     int currentKit = 0;
     std::unique_ptr<juce::PropertiesFile> settings;
     juce::String audioStatus;
