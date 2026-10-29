@@ -105,16 +105,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > vélocité, décroissance. Vibration des cymbales, particules optionnelles. 60 fps.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
-- [ ] TASK-021 | host : README, avertissement chemins longs Windows
-  > Le README explique que la limite de 260 caractères casse MSBuild si le repo est cloné
-  > trop profond, et donne la solution (activer les chemins longs ou cloner près de la racine).
-  > Blocked by: —
-
 ## IN PROGRESS
 
 ## ON HOLD
 
 ## DONE
+- [x] TASK-021 | host : README, avertissement chemins longs Windows
+  > Merged in: devape (2026-10-29)
 - [x] TASK-013 | host : squelette app JUCE (CMake, Windows + Mac)
   > Merged in: devape (2026-10-29), branch feat/task-013-host-skeleton
 - [x] TASK-001 | Init repo (.gitignore, .gitattributes, premier commit)
