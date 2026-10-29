@@ -62,19 +62,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
-  > Shader PBR (GGX, metallic/roughness) ; éclairage studio : lumière principale avec ombres
-  > portées (shadow map, PCF), contre-jours néon cyan/magenta, environnement procédural pour
-  > les reflets (cymbales, chrome) ; rendu HDR + tone mapping filmique (ACES), MSAA.
-  > Matériaux : laque avec vernis (fûts), chrome, bronze avec rainures de tournage (cymbales),
-  > peaux sablées, bois (baguettes). Direction artistique sombre, accents néon. 60 fps.
-  > Vérification par captures avant/après.
-  > Branch: feat/task-019-pbr-lighting
-  > Blocked by: TASK-016 (scène à éclairer)
-
 ## ON HOLD
 
 ## DONE
+- [x] TASK-019 | host : rendu physique (PBR), ombres, environnement studio
+  > Merged in: devape (2026-10-29). Ombres (projecteur), PBR GGX, laque à paillettes vernie,
+  > chrome, bronze rainuré, environnement studio néon, HDR + ACES, 60 fps. Capture :
+  > docs/images/host-3d-view.png. Review indépendante : bug NaN hors NVIDIA corrigé.
 - [x] TASK-010 | tools/plot_session.py : courbes accel/gyro + marquage saturation
   > Merged in: devape (2026-10-29). Tracés bruts accel/gyro par baguette, saturation marquée,
   > pertes surlignées, stats par baguette. 5 tests.

@@ -43,6 +43,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   (60 fps, flashs, baguettes qui bougent, flèches pour le tempo). À juger par toi : le rendu
   général, la sensation de la caméra (glisser / molette / double-clic), et **le lancement sur
   le Mac** (le build Mac passe en CI mais l'app n'y a jamais tourné).
+- **Rendu 3D (TASK-019)** : capture dans `docs/images/host-3d-view.png`. Direction artistique à
+  valider : fûts laqués bleu à paillettes, cymbales bronze, studio sombre, liserés néon cyan /
+  magenta, tapis à anneau cyan. Les couleurs sont des constantes faciles à changer.
 - **Son (TASK-018)** : écouter l'app avec le batteur simulé. Les sons sont synthétisés en code
   (caisse claire, toms, charleston, crash, ride) : à juger à l'oreille, avec la latence perçue.
   M coupe le son.
