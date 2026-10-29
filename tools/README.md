@@ -30,6 +30,29 @@ saturated samples marked and lost packets shaded. Prints, per stick: received sa
 packets lost and saturated samples. (Conversion to g and deg/s waits for the sensitivities to
 be checked in the datasheet, TASK-004.)
 
+## detect_hits.py — hit detection prototype (phase 1 groundwork)
+```
+python tools/detect_hits.py                        # simulated sessions, scored against truth
+python tools/detect_hits.py --realistic --sweep    # harder simulation, threshold trade-off
+python tools/detect_hits.py --csv recordings/session_<stamp>_imu.csv --stick 0   # real data
+```
+- `detection/imu_sim.py` — simulated stick IMU (wrist pivot, braked "air" strokes or "pad"
+  impacts, gyro saturation at +-2000 dps, noise, fake twitches) with ground truth.
+- `detection/detector.py` — streaming detector, one sample at a time (to port to the firmware):
+  fires when a fast downstroke is braked below 35 % of its peak, a few ms before the stick stops;
+  velocity from the peak rate, or from the rise acceleration when the gyro saturates.
+- `detection/evaluate.py` — precision, recall, latency, velocity correlation.
+
+Results on simulated data (60 s, 110 bpm, threshold 260 dps):
+
+| Simulation | Recall | Precision | Velocity correlation | Fires before the stop |
+|---|---|---|---|---|
+| clean | 100 % | 100 % | 0.99 | ~5 ms |
+| realistic (tilted axis, doubles, ghost notes, more noise) | ~99 % | ~98.5 % | 0.995 | ~8 ms |
+
+The threshold trades ghost notes against twitches (180 dps: no miss, more false triggers;
+380 dps: no false trigger, the softest ghost notes are missed). Real recordings decide.
+
 ## vdrum/ — shared code
 - `protocol.py` — Python view of `firmware/common/protocol.h` (parser, encoder, crc8).
   The tests check its constants against the C header.
