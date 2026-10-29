@@ -37,6 +37,10 @@ MainComponent::~MainComponent()
 void MainComponent::startSource (const juce::String& commandLine)
 {
     const auto arguments = juce::StringArray::fromTokens (commandLine, true);
+    const auto viewIndex = arguments.indexOf ("--view");
+    if (viewIndex >= 0 && viewIndex + 1 < arguments.size())
+        sceneView.setCameraAzimuthDegrees (arguments[viewIndex + 1].getFloatValue());
+
     const auto fakeIndex = arguments.indexOf ("--fake");
     const auto portIndex = arguments.indexOf ("--port");
 

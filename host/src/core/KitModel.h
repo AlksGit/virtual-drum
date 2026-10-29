@@ -32,6 +32,7 @@ struct Material
     float clearcoat = 0.0f;     // extra glossy dielectric layer (lacquer)
     SurfacePattern pattern = SurfacePattern::none;
     float patternScale = 1.0f;
+    Vec3 glow {};               // constant emission (neon accents), linear RGB
 };
 
 // sRGB colour (0xRRGGBB) to linear RGB.

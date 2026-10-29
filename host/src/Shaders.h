@@ -196,12 +196,14 @@ void main()
     }
     else if (pattern == 2) // lacquer with metal flakes
     {
+        // Semi-metallic flakes: they glint in the light but never turn darker than the paint
+        // when they reflect a dark part of the room.
         float flake = hash (floor (localPosition * 420.0));
-        if (flake > 0.95)
+        if (flake > 0.97)
         {
-            metal = 1.0;
-            rough = 0.18;
-            albedo = baseColour * 2.2 + vec3 (0.04, 0.05, 0.08);
+            metal = 0.5;
+            rough = 0.2;
+            albedo = baseColour * 1.8 + vec3 (0.05, 0.06, 0.09);
         }
     }
     else if (pattern == 3) // coated head, darker collar at the edge

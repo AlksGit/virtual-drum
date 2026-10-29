@@ -293,13 +293,13 @@ void SceneRenderer::collectDrawItems (const SceneState::Snapshot& snapshot, doub
 
     for (const auto& part : kit.parts)
     {
-        Vec3 emissive {};
+        auto emissive = part.material.glow;
         if (part.pad >= 0)
         {
             const auto& hit = snapshot.pads[static_cast<std::size_t> (part.pad)];
             const auto age = nowSeconds - hit.timeSeconds;
             if (age >= 0.0)
-                emissive = part.flashColour * (hit.velocity * static_cast<float> (std::exp (-age / kFlashDecaySeconds)));
+                emissive = emissive + part.flashColour * (hit.velocity * static_cast<float> (std::exp (-age / kFlashDecaySeconds)));
         }
         drawItems.push_back ({ &meshes[static_cast<std::size_t> (part.mesh)], part.model, &part.material, emissive });
     }

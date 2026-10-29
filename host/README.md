@@ -51,6 +51,7 @@ cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 "Virtual Drum.exe"                 # Windows: receiver if detected, simulated drummer otherwise
 "Virtual Drum.exe" --fake 120      # force the simulated drummer, at 120 bpm
 "Virtual Drum.exe" --port COM5     # force a serial port
+"Virtual Drum.exe" --view 20       # start with the camera in front of the kit (degrees)
 open "Virtual Drum.app" --args --fake 120   # macOS
 ```
 In the 3D view: drag to orbit, mouse wheel to zoom, double-click to reset the camera.
@@ -85,7 +86,8 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
 ## Layout
 - `src/Main.cpp` — application and main window
 - `src/MainComponent.*` — top-level content
-- `src/SceneView.*` — 3D view, OpenGL 4.1 Core (renders on JUCE's GL thread)
+- `src/SceneView.*` — 3D view component: camera, overlay (renders on JUCE's GL thread)
+- `src/SceneRenderer.*`, `src/Shaders.h` — shadow map, PBR scene in HDR, tone mapping
 - `src/AudioEngine.*` — audio output (JUCE device manager) playing the sampler
 - `src/core/` — no JUCE dependency, unit tested:
   - `Packets.*` — C++ view of `protocol.h`, encode / decode
@@ -95,7 +97,9 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
   - `FakeDrummer.*` — deterministic simulated drummer (groove, fills, stick motion)
   - `FakeDataSource.*` — plays the fake drummer in real time through the real wire format
   - `DrumKit.h` — hit zones of the kit (azimuth / elevation), `Quaternion.h` — orientation math
-  - `KitLayout.h` — physical placement of the pads, `Mesh.*` — procedural meshes, `Mat4.h`
+  - `KitLayout.h` — physical placement of the pads, bass drum and throne
+  - `KitModel.*` — every part of the kit (meshes, PBR materials), built procedurally
+  - `Mesh.*` — procedural primitives (lathe, tube, torus, box...), `Mat4.h`
   - `SceneState.h` — thread-safe state shared by the data source and the renderer
   - `Sampler.*` — voices, velocity curve, panning; `HitQueue.h` — lock-free hits to the audio
     thread; `DrumSynth.*` — procedural drum sounds

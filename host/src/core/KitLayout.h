@@ -34,6 +34,17 @@ struct KitLayout
     static constexpr float kStickLength = 0.42f;        // grip to tip
     static constexpr float kTipSpacing = 0.06f;         // keeps two sticks on one pad apart
 
+    // Bass drum (decorative until the pedals exist): lying along X, batter head facing the
+    // player. Sized to clear the snare and the floor tom (checked by a test); its hoops touch
+    // the floor.
+    static constexpr Vec3 kKickBatterCentre { 0.70f, -0.05f, 0.225f };
+    static constexpr float kKickRadius = 0.215f;
+    static constexpr float kKickDepth = 0.40f;
+
+    // Drummer's throne.
+    static constexpr Vec3 kThroneSeatCentre { -0.20f, 0.0f, 0.50f };
+    static constexpr float kThroneRadius = 0.17f;
+
     // Where the tip of a stick pointing at (azimuth, elevation) is.
     static Vec3 tipPosition (float azimuthRad, float elevationRad)
     {
