@@ -21,11 +21,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > xiao_ble, schéma Seeed, datasheet). Tâche doc, pas de code.
   > Blocked by: TASK-002 (devicetree de la version NCS installée)
 
-- [ ] TASK-005 | Décision : taille des paquets RAW (ESB DPL vs 1 échantillon/paquet)
-  > Décision dans docs/DECISIONS.md ; protocol.h et docs/PROTOCOL.md mis à jour ;
-  > PROTO_VERSION incrémenté.
-  > Blocked by: —
-
 - [ ] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
   > Accéléro + gyro ≥ 1 kHz, ±16 g / ±2000 dps ; débit vérifié par log RTT/UART ;
   > pas d'allocation dynamique.
@@ -93,6 +88,9 @@ validation "sur cible" (flash, mesures) attend le matériel.
 ## ON HOLD
 
 ## DONE
+- [x] TASK-005 | Décision : taille des paquets RAW (ESB DPL vs 1 échantillon/paquet)
+  > Merged in: devape (2026-10-29). DPL, 8 échantillons / paquet (105 o), protocole v3.
+  > Calcul de temps d'antenne dans DECISIONS.md ; risque de collisions à mesurer (TASK-012).
 - [x] TASK-015 | host : générateur de fausses données réalistes
   > Merged in: devape (2026-10-29). Batteur simulé déterministe (groove, breaks, mouvement),
   > 11 tests, `vdrum_monitor --fake`. Protocole v2 (convention de repère des quaternions).

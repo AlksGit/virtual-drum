@@ -16,6 +16,11 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   ta consigne directe (merge `--no-ff` dans `devape` + push, jamais `main`). — À toi de décider si
   tu veux ajouter ces règles toi-même dans les configs pour les prochaines sessions.
 
+- **Format RAW (TASK-005)** : décidé par défaut — payload ESB dynamique, 8 échantillons par paquet
+  (105 o). Un échantillon par paquet de 32 o saturerait la radio (~119 % de temps d'antenne pour
+  2 baguettes à 1,66 kHz). — Rien de bloqué. — Si tu préfères une autre ODR ou un autre lot,
+  c'est une constante (`RAW_MAX_SAMPLES`) ; le calcul est dans DECISIONS.md.
+
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
 - TASK-022 : CI GitHub Actions (build host Windows + macOS).
