@@ -71,16 +71,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-019 (bloom réglé sur les matériaux émissifs)
 
 ## IN PROGRESS
-- [ ] TASK-009 | tools/logger.py : série → CSV par session
-  > Resync sur 0xA5 0x5A ; CSV : une colonne par axe + stick_id + seq + rx_time_us ;
-  > `--port` sinon auto-détection VID/PID ; pathlib ; Windows et macOS.
-  > Testable avant le firmware avec des trames factices.
-  > Branch: feat/task-009-logger
-  > Blocked by: TASK-005 (format)
-
 ## ON HOLD
 
 ## DONE
+- [x] TASK-009 | tools/logger.py : série → CSV par session
+  > Merged in: devape (2026-10-29). Parseur Python identique au C++ (constantes vérifiées contre
+  > protocol.h), CSV par session, rejeu de captures. 35 tests, CI Linux/Windows/macOS.
+  > Lecture série réelle non validée (hardware).
 - [x] TASK-016 | host : scène 3D de base (kit + baguettes + caméra)
   > Merged in: devape (2026-10-29). Scène OpenGL 4.1 à 60 fps vérifiée par captures (Windows),
   > flash au coup, caméra orbitale, tempo au clavier. 12 tests de géométrie. Build Mac OK en CI,
