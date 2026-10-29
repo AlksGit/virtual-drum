@@ -15,13 +15,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
-- [ ] TASK-007 | Lien ESB stick → receiver, paquets RAW, compteur seq
-  > Le récepteur reçoit les paquets RAW des deux baguettes (pipes distincts) ;
-  > `seq` permet de compter les pertes.
-  > Hardware requis pour : validation radio.
-  > Branch: feat/task-007-esb-raw-v2
-  > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
-
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
@@ -32,6 +25,9 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-007 | Lien ESB stick → receiver, paquets RAW, compteur seq
+  > Merged in: devape (2026-10-29), branche feat/task-007-esb-raw-v2. ESB PTX, RAW de 8 échantillons,
+  > STATUS 1 Hz, paquet raté jeté puis reprise. UF2 gauche/droite en CI. **Non validé sur cible.**
 - [x] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
   > Merged in: devape (2026-10-29). ESB PRX 2 canaux → trames USB CDC (crc8, horodatage, RSSI dBm),
   > un seul port, tampon qui jette des trames entières. Review indépendante traitée.

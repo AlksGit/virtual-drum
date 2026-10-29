@@ -83,5 +83,8 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   Receiver ») ; LED verte qui clignote lentement sans baguette, plus vite avec trafic, rouge si des
   trames sont jetées. Mesurer avec les deux baguettes en RAW que la LED rouge reste éteinte
   (sinon le débit USB, ~47 ko/s, est trop juste : piste `CONFIG_USBD_CDC_ACM_BUF_POOL`).
+- **Chaîne complète (TASK-007)** : flasher `stick-left`, `stick-right` et `receiver` (artefacts CI),
+  puis `vdrum_monitor` : ~208 paquets RAW/s et 1 STATUS/s par baguette, `lost` proche de 0.
+  Les deux baguettes en même temps : c'est là que les collisions radio se verront (DECISIONS.md).
 - **Logger Python (TASK-009)** : `python tools/logger.py --duration 30 --save-raw` avec le récepteur
   branché : CSV créés dans `recordings/`, ~1666 échantillons/s par baguette, pertes et crc affichés.
