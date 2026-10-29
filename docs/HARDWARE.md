@@ -75,5 +75,4 @@ nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west init -m https://gi
 cd <dossier>/v3.4.1
 nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west update --narrow -o=--depth=1
 ```
-Sur le PC : `C:
-cs3.4.1`. Sur Mac, `~/ncs/v3.4.1` par exemple.
+Sur le PC : `C:/ncs/v3.4.1`. Sur Mac, `~/ncs/v3.4.1` par exemple.
