@@ -1,4 +1,4 @@
-# Protocol — version 1 (brouillon, phase 0)
+# Protocol — version 2 (brouillon, phase 0)
 
 Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ parseur Python
 (`tools/`), et incrément de `PROTO_VERSION`.
@@ -35,6 +35,15 @@ Décision à consigner dans DECISIONS.md.
 | `quat` | i16×4 — orientation au coup, ordre w, x, y, z, Q14 (1.0 = 16384) |
 | `flags` | u8 — saturation détectée, etc. |
 
+### Convention d'orientation (HIT et ORIENT)
+Le quaternion fait passer du **repère baguette** au **repère monde** :
+- repère baguette : X le long de la baguette, vers la pointe ;
+- repère monde : X devant le joueur (vers le kit), Y à sa gauche, Z vers le haut.
+
+Les zones de frappe se lisent sur la direction de la pointe : **azimut** (lacet, positif vers la
+gauche) et **élévation** (tangage, positif vers le haut). Le kit par défaut est décrit dans
+`host/src/core/DrumKit.h`. Le firmware (fusion Mahony/Madgwick, phase 2) devra produire ce repère.
+
 ### 0x03 ORIENT (~100 Hz)
 `t_us` u32, `quat` i16×4 (w, x, y, z, Q14).
 
@@ -62,6 +71,7 @@ A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
 ```
 
 ## Historique
+- v2 (2026-10) : convention de repère des quaternions (baguette → monde, axes du monde).
 - v1 (2026-10) : définition du crc8 et de sa couverture, ordre w, x, y, z des quaternions,
   identifiants USB. `protocol.h` compilable sous MSVC.
 - v0 : brouillon initial.

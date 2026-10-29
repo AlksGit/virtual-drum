@@ -3,9 +3,11 @@
 //   vdrum_monitor --list            list serial ports with their USB ids
 //   vdrum_monitor                   auto-detect the receiver, print a summary every second
 //   vdrum_monitor --port COM5       same, on a given port
+//   vdrum_monitor --fake [bpm]      same, with the simulated drummer instead of the receiver
 //   vdrum_monitor --verbose         also print every frame (slow consoles may then delay
 //                                   the reading thread and distort loss measurements)
 
+#include "FakeDataSource.h"
 #include "SerialDataSource.h"
 #include "SerialPort.h"
 
@@ -14,7 +16,9 @@
 #include <chrono>
 #include <csignal>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -127,6 +131,7 @@ public:
                 std::printf (" %s=%.0f/s", kNames[kind], static_cast<double> (stick.counts[kind].exchange (0)) / seconds);
             std::printf ("  lost=%llu\n", static_cast<unsigned long long> (stick.lost.exchange (0)));
         }
+        std::fflush (stdout); // keep the output live when redirected to a file
     }
 
 private:
@@ -149,6 +154,8 @@ int main (int argc, char** argv)
 {
     std::string portPath;
     bool verbose = false;
+    bool fake = false;
+    double fakeBpm = 96.0;
 
     for (int i = 1; i < argc; ++i)
     {
@@ -170,23 +177,37 @@ int main (int argc, char** argv)
             continue;
         }
 
-        std::printf ("Usage: vdrum_monitor [--list] [--port <path>] [--verbose]\n");
+        if (std::strcmp (argv[i], "--fake") == 0)
+        {
+            fake = true;
+            if (i + 1 < argc && std::atof (argv[i + 1]) > 0.0)
+                fakeBpm = std::atof (argv[++i]);
+            continue;
+        }
+
+        std::printf ("Usage: vdrum_monitor [--list] [--port <path> | --fake [bpm]] [--verbose]\n");
         return 2;
     }
 
     std::signal (SIGINT, onSignal);
 
-    vdrum::SerialDataSource source (portPath);
+    std::unique_ptr<vdrum::DataSource> source;
+    if (fake)
+        source = std::make_unique<vdrum::FakeDataSource> (vdrum::FakeDrummerSettings { fakeBpm, 1 });
+    else
+        source = std::make_unique<vdrum::SerialDataSource> (portPath);
+
     CountingListener listener (verbose);
     std::string error;
-    if (! source.start (listener, error))
+    if (! source->start (listener, error))
     {
         std::printf ("%s\n\nAvailable ports:\n", error.c_str());
         printPorts();
         return 1;
     }
 
-    std::printf ("Reading from %s (Ctrl+C to stop)\n", source.getName().c_str());
+    std::printf ("Reading from %s (Ctrl+C to stop)\n", source->getName().c_str());
+    std::fflush (stdout);
 
     using Clock = std::chrono::steady_clock;
     auto lastSummary = Clock::now();
@@ -202,11 +223,14 @@ int main (int argc, char** argv)
         }
     }
 
-    source.stop();
+    source->stop();
 
-    const auto stats = source.getStats();
-    std::printf ("\nframes=%llu crc_errors=%llu length_errors=%llu discarded_bytes=%llu\n",
-                 static_cast<unsigned long long> (stats.frames), static_cast<unsigned long long> (stats.crcErrors),
-                 static_cast<unsigned long long> (stats.lengthErrors), static_cast<unsigned long long> (stats.discardedBytes));
+    if (const auto* serial = dynamic_cast<const vdrum::SerialDataSource*> (source.get()))
+    {
+        const auto stats = serial->getStats();
+        std::printf ("\nframes=%llu crc_errors=%llu length_errors=%llu discarded_bytes=%llu\n",
+                     static_cast<unsigned long long> (stats.frames), static_cast<unsigned long long> (stats.crcErrors),
+                     static_cast<unsigned long long> (stats.lengthErrors), static_cast<unsigned long long> (stats.discardedBytes));
+    }
     return 0;
 }

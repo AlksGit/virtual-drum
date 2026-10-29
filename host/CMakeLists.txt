@@ -25,11 +25,13 @@ add_library(vdrum_core STATIC
     src/core/Packets.cpp
     src/core/FrameParser.cpp
     src/core/SerialPort.cpp
-    src/core/SerialDataSource.cpp)
+    src/core/SerialDataSource.cpp
+    src/core/FakeDrummer.cpp
+    src/core/FakeDataSource.cpp)
 
 if(WIN32)
     target_sources(vdrum_core PRIVATE src/core/SerialPort_windows.cpp)
-    target_link_libraries(vdrum_core PRIVATE setupapi)
+    target_link_libraries(vdrum_core PRIVATE setupapi winmm)
 else()
     target_sources(vdrum_core PRIVATE src/core/SerialPort_posix.cpp)
 endif()
@@ -57,7 +59,8 @@ enable_testing()
 add_executable(vdrum_tests
     tests/TestMain.cpp
     tests/ProtocolTests.cpp
-    tests/SerialTests.cpp)
+    tests/SerialTests.cpp
+    tests/FakeSourceTests.cpp)
 
 target_link_libraries(vdrum_tests
     PRIVATE

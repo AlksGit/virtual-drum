@@ -59,7 +59,10 @@ Command-line tool for hardware bring-up, built next to the app:
 vdrum_monitor --list         # serial ports with their USB ids
 vdrum_monitor                # auto-detect the receiver and print received frames
 vdrum_monitor --port COM5    # read a given port (/dev/cu.usbmodem... on macOS)
+vdrum_monitor --fake 120     # simulated drummer at 120 bpm, no hardware needed
 ```
+By default it prints one summary per second (packet rates per stick and type, packets lost
+from `seq` gaps). `--verbose` also prints every frame, which can slow the reading down.
 The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`.
 
 ## Layout
@@ -71,5 +74,8 @@ The receiver is detected by its USB ids, defined in `firmware/common/protocol.h`
   - `FrameParser.*` — incremental USB frame parser with resynchronisation
   - `DataSource.h` — interface for anything that produces frames
   - `SerialDataSource.*`, `SerialPort*` — the USB receiver over a serial port
+  - `FakeDrummer.*` — deterministic simulated drummer (groove, fills, stick motion)
+  - `FakeDataSource.*` — plays the fake drummer in real time through the real wire format
+  - `DrumKit.h` — hit zones of the kit (azimuth / elevation), `Quaternion.h` — orientation math
 - `src/tools/Monitor.cpp` — `vdrum_monitor`
 - `tests/` — unit tests
