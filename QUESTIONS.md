@@ -64,6 +64,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   magenta, tapis à anneau cyan. Les couleurs sont des constantes faciles à changer.
 - **Animations (TASK-020)** : bloom, anneau lumineux sur les peaux, balancement des cymbales.
   Intensités réglables (constantes en tête de `host/src/SceneRenderer.cpp`).
+- **Kits de sons (TASK-024)** : écouter Studio, Rock, Jazz, Électro 808 (liste en haut à droite
+  ou touche K). Pour de vrais sons : « Open kits folder... », un dossier par kit avec
+  `snare.wav`, `hihat.wav`, etc., puis « Refresh list ».
 - **Son (TASK-018)** : écouter l'app avec le batteur simulé. Les sons sont synthétisés en code
   (caisse claire, toms, charleston, crash, ride) : à juger à l'oreille, avec la latence perçue.
   M coupe le son.
