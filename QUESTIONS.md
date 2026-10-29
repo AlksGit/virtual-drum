@@ -39,6 +39,10 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
   et WHO_AM_I viennent du pilote officiel ST livré avec NCS. — Rien de bloqué ; la taille de FIFO
   reste à confirmer (PDF à déposer dans `docs/` si tu veux que je la vérifie).
 
+- **Espace dans le chemin du repo** (`Personal work`) : Zephyr refuse les chemins avec espaces.
+  — Défaut : build via `subst V:` (documenté dans `firmware/README.md`). — Plus simple à terme :
+  déplacer le repo dans un chemin sans espace (ex. `C:\devirtual-drum`) ; ton choix.
+
 ## Créé pendant ton absence
 (tâches ajoutées au backlog)
 - TASK-023 : modèles procéduraux détaillés du kit.
@@ -59,6 +63,9 @@ Format : question — choix par défaut pris — ce qui est bloqué / ce qui ava
 
 ## À tester avec le hardware
 (étapes de validation sur cible)
+- **Blinky (TASK-003)** : télécharger les UF2 depuis l'onglet Actions de GitHub (workflow
+  « firmware », artefacts `stick-uf2` / `receiver-uf2`) ou builder en local, double-tap reset,
+  copier `zephyr.uf2` : LED bleue qui clignote sur une baguette, verte sur le récepteur.
 - **Lien USB (TASK-014)** : brancher le récepteur, lancer `vdrum_monitor --list` puis `vdrum_monitor` :
   le port doit être détecté (VID/PID 2FE3:0100), les débits par baguette affichés, 0 crc_errors.
   Débrancher pendant la lecture : le monitor doit afficher « Source stopped » sans planter.

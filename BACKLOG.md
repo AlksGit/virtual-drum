@@ -4,13 +4,6 @@ Note : hardware pas encore disponible (2026-10-29). Le code peut avancer, mais t
 validation "sur cible" (flash, mesures) attend le matériel.
 
 ## TODO
-- [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
-  > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
-  > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
-  > vérifié et noté dans docs/HARDWARE.md).
-  > Hardware requis pour : flash + LED.
-  > Blocked by: TASK-002 (pas de build sans toolchain)
-
 - [ ] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
   > Accéléro + gyro ≥ 1 kHz, ±16 g / ±2000 dps ; débit vérifié par log RTT/UART ;
   > pas d'allocation dynamique.
@@ -23,12 +16,6 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Hardware requis pour : validation radio.
   > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
 
-- [ ] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
-  > Trame `0xA5 0x5A | len | rx_time_us | rssi | payload | crc8` conforme à
-  > docs/PROTOCOL.md, visible sur un terminal série. Peut avancer avec paquets factices.
-  > Hardware requis pour : validation USB.
-  > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
-
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
@@ -40,7 +27,21 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
+- [ ] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
+  > Trame `0xA5 0x5A | len | rx_time_us | rssi | payload | crc8` conforme à
+  > docs/PROTOCOL.md, visible sur un terminal série. Peut avancer avec paquets factices.
+  > Hardware requis pour : validation USB.
+  > Branch: feat/task-008-receiver-relay
+  > Blocked by: TASK-005 (format), TASK-003 (flash du receiver)
+
 ## ON HOLD
+- [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
+  > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
+  > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
+  > vérifié et noté dans docs/HARDWARE.md).
+  > Hardware requis pour : flash + LED.
+  > Fait : build des deux apps, UF2 vérifié (0x27000, famille nRF52840), CI firmware avec UF2 en artefacts.
+  > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
 - [x] TASK-020 | host : bloom et animations au coup
