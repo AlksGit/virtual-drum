@@ -262,3 +262,12 @@ VDRUM_TEST (q14ConversionsAreSymmetric)
     CHECK (floatToQ14 (5.0f) == 32767);
     CHECK (floatToQ14 (-5.0f) == -32768);
 }
+
+VDRUM_TEST (rawPacketWithInvalidCountStillEncodesADecodableFrame)
+{
+    RawPacket raw; // count 0 is not allowed on the wire
+    const auto bytes = encodePacket (raw);
+    const auto decoded = decodePacket (bytes.data(), bytes.size());
+    REQUIRE (decoded.has_value());
+    CHECK (std::get<RawPacket> (*decoded).count == 1);
+}

@@ -181,6 +181,12 @@ bool SerialPort::open (const std::string& path, std::string& error)
     dcb.fDsrSensitivity = FALSE;
     dcb.fOutX = FALSE;
     dcb.fInX = FALSE;
+    dcb.fTXContinueOnXoff = TRUE;
+    // GetCommState returns whatever the previous user of the port left: reset the fields
+    // that would corrupt a binary stream (fNull strips 0x00 bytes) or stall reads.
+    dcb.fNull = FALSE;
+    dcb.fErrorChar = FALSE;
+    dcb.fAbortOnError = FALSE;
     dcb.fDtrControl = DTR_CONTROL_ENABLE;
     dcb.fRtsControl = RTS_CONTROL_ENABLE;
 
@@ -230,7 +236,14 @@ long SerialPort::read (std::uint8_t* data, std::size_t size, int timeoutMs)
     DWORD bytesRead = 0;
     const auto toRead = static_cast<DWORD> (size > MAXDWORD ? MAXDWORD : size);
     if (! ReadFile (impl->handle, data, toRead, &bytesRead, nullptr))
-        return -1;
+    {
+        // A line error can make ReadFile fail until it is cleared: clear it and retry once.
+        // If the retry fails too, the device is most likely gone.
+        DWORD errors = 0;
+        if (! ClearCommError (impl->handle, &errors, nullptr)
+            || ! ReadFile (impl->handle, data, toRead, &bytesRead, nullptr))
+            return -1;
+    }
 
     return static_cast<long> (bytesRead);
 }

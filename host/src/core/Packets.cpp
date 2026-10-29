@@ -238,7 +238,9 @@ std::vector<std::uint8_t> encodePacket (const Packet& packet)
         {
             header.type = PKT_RAW;
             writeHeader (writer, header);
-            const auto count = p.count < p.samples.size() ? p.count : static_cast<std::uint8_t> (p.samples.size());
+            // Keep the count within what the format allows, so an encoded frame always decodes.
+            const auto maxCount = static_cast<std::uint8_t> (p.samples.size());
+            const auto count = p.count < 1 ? std::uint8_t { 1 } : (p.count > maxCount ? maxCount : p.count);
             writer.u32 (p.t0Us);
             writer.u8 (count);
             for (std::size_t i = 0; i < count; ++i)

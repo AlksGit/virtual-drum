@@ -12,6 +12,8 @@ namespace vdrum
 {
 
 // Reads frames from the USB receiver over a serial port, on a dedicated thread.
+// stop() may be called from a listener callback (it then only requests the stop);
+// start() may not, so reconnecting after a failure must be done from another thread.
 class SerialDataSource final : public DataSource
 {
 public:
@@ -29,6 +31,7 @@ public:
 
 private:
     void run (Listener& listener);
+    bool isReaderThread() const;
 
     std::string requestedPath;
     std::string openedPath;
@@ -36,10 +39,11 @@ private:
     protocol::FrameParser parser;
 
     std::thread thread;
+    std::atomic<std::thread::id> readerThreadId {};
     std::atomic<bool> running { false };
     std::atomic<bool> stopRequested { false };
 
-    mutable std::mutex statsMutex;
+    mutable std::mutex stateMutex; // guards openedPath and stats
     protocol::FrameParser::Stats stats;
 };
 

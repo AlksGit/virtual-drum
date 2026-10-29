@@ -4,7 +4,7 @@
 #include <cstring>
 
 #include <fcntl.h>
-#include <poll.h>
+#include <sys/select.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -70,6 +70,8 @@ std::vector<SerialPortInfo> listSerialPorts()
 {
     std::vector<SerialPortInfo> ports;
 
+    // Enumeration is implemented for macOS only (Linux is not a target): elsewhere the list
+    // is empty and ports must be given explicitly.
 #if defined(__APPLE__)
     auto* matching = IOServiceMatching (kIOSerialBSDServiceValue);
     if (matching == nullptr)
@@ -191,21 +193,25 @@ long SerialPort::read (std::uint8_t* data, std::size_t size, int timeoutMs)
     if (! isOpen())
         return -1;
 
-    pollfd descriptor {};
-    descriptor.fd = impl->fd;
-    descriptor.events = POLLIN;
+    // select() rather than poll(): poll() does not support character devices on macOS
+    // (see BUGS in poll(2)), which is also why pyserial uses select().
+    fd_set readSet;
+    FD_ZERO (&readSet);
+    FD_SET (impl->fd, &readSet);
 
-    const auto ready = ::poll (&descriptor, 1, timeoutMs);
+    timeval timeout {};
+    timeout.tv_sec = timeoutMs / 1000;
+    timeout.tv_usec = (timeoutMs % 1000) * 1000;
+
+    const auto ready = ::select (impl->fd + 1, &readSet, nullptr, nullptr, &timeout);
     if (ready < 0)
         return errno == EINTR ? 0 : -1;
     if (ready == 0)
         return 0;
-    if ((descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0)
-        return -1;
 
     const auto bytesRead = ::read (impl->fd, data, size);
     if (bytesRead < 0)
-        return (errno == EAGAIN || errno == EINTR) ? 0 : -1;
+        return (errno == EAGAIN || errno == EINTR) ? 0 : -1; // ENXIO / EIO: device gone
     if (bytesRead == 0)
         return -1; // readable but no data: the device went away
 

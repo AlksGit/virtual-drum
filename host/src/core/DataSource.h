@@ -19,10 +19,12 @@ public:
 
         // Called on the source's own thread, in stream order. Must return quickly and
         // must not block (hand the data over to other threads through a queue).
+        // An exception thrown here stops the source and is reported via sourceFailed().
         virtual void frameReceived (const protocol::Frame& frame) = 0;
 
         // Called on the source's own thread when the source stops by itself
         // (device unplugged, read error...). The source is no longer running afterwards.
+        // May call stop(), but not start(): restart from another thread. Must not throw.
         virtual void sourceFailed (const std::string& message) = 0;
     };
 
