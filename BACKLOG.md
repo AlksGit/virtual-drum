@@ -15,6 +15,16 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
+- [ ] TASK-024 | host : sélecteur de kits de sons
+  > Plusieurs kits synthétisés (Studio, Rock, Jazz, Électro 808) + kits de samples de
+  > l'utilisateur (WAV/AIFF/FLAC dans `Documents/Virtual Drum/Kits/<nom>/`, un fichier par pad,
+  > pad manquant = son Studio). Choix par liste déroulante dans l'app et touche K, dernier kit
+  > mémorisé. Changement de kit sans craquement ni risque pendant le jeu (échange côté thread
+  > audio, libération hors thread audio). Tests unitaires.
+  > Demandé par l'utilisateur le 2026-10-29.
+  > Branch: feat/task-024-sound-kits
+  > Blocked by: — (TASK-018 fait)
+
 ## ON HOLD
 - [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
   > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
