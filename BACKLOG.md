@@ -4,18 +4,6 @@ Note : hardware pas encore disponible (2026-10-29). Le code peut avancer, mais t
 validation "sur cible" (flash, mesures) attend le matériel.
 
 ## TODO
-- [ ] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
-  > Accéléro + gyro ≥ 1 kHz, ±16 g / ±2000 dps ; débit vérifié par log RTT/UART ;
-  > pas d'allocation dynamique.
-  > Hardware requis pour : validation du débit.
-  > Blocked by: TASK-003 (build/flash), TASK-004 (pins et adresse I²C vérifiés)
-
-- [ ] TASK-007 | Lien ESB stick → receiver, paquets RAW, compteur seq
-  > Le récepteur reçoit les paquets RAW des deux baguettes (pipes distincts) ;
-  > `seq` permet de compter les pertes.
-  > Hardware requis pour : validation radio.
-  > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
-
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
@@ -27,6 +15,13 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
 
 ## IN PROGRESS
+- [ ] TASK-007 | Lien ESB stick → receiver, paquets RAW, compteur seq
+  > Le récepteur reçoit les paquets RAW des deux baguettes (pipes distincts) ;
+  > `seq` permet de compter les pertes.
+  > Hardware requis pour : validation radio.
+  > Branch: feat/task-007-esb-raw
+  > Blocked by: TASK-005 (format), TASK-006 (données à envoyer)
+
 - [ ] TASK-008 | receiver : relais USB CDC avec timestamp de réception + crc8
   > Trame `0xA5 0x5A | len | rx_time_us | rssi | payload | crc8` conforme à
   > docs/PROTOCOL.md, visible sur un terminal série. Peut avancer avec paquets factices.
@@ -44,6 +39,9 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-006 | stick : lecture IMU LSM6DS3TR-C en FIFO, ODR ≥ 1 kHz
+  > Merged in: devape (2026-10-29). Code + build OK (CI), **non validé sur cible** : débit réel,
+  > ordre gyro/accel détecté, lecture FIFO multi-octets à confirmer (QUESTIONS.md).
 - [x] TASK-020 | host : bloom et animations au coup
   > Merged in: devape (2026-10-29). Bloom HDR (pyramide 6 niveaux), anneau lumineux sur les peaux,
   > balancement amorti des cymbales. Audio ouvert 1,5 s après le démarrage (la scène s'affiche
