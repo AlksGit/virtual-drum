@@ -63,7 +63,8 @@ static void esb_event(struct esb_evt const *event)
 
 		struct rx_packet packet = {
 			.rx_time_us = rx_time,
-			.rssi = payload.rssi,
+			/* ESB reports RSSISAMPLE, a positive magnitude: RSSI = -value dBm. */
+			.rssi = (int8_t)-(int)payload.rssi,
 			.length = payload.length,
 		};
 
@@ -130,6 +131,7 @@ int main(void)
 	static uint8_t frame[USB_FRAME_OVERHEAD + RADIO_MAX_PAYLOAD];
 	struct rx_packet packet;
 	uint32_t relayed = 0;
+	uint32_t last_session = 0;
 
 	leds_init();
 
@@ -152,6 +154,13 @@ int main(void)
 
 		if ((++relayed & 0x3F) == 0) {
 			(void)gpio_pin_toggle_dt(&led_green);
+		}
+		/* Drops are counted per host session (since the port was last opened). */
+		const uint32_t session = usb_link_session();
+
+		if (session != last_session) {
+			atomic_clear(&queue_overflows);
+			last_session = session;
 		}
 		(void)gpio_pin_set_dt(&led_red, usb_link_dropped() > 0 || atomic_get(&queue_overflows) > 0);
 	}

@@ -19,11 +19,17 @@
 /* ~70 full RAW frames: about 0.15 s of both sticks streaming RAW data. */
 #define TX_BUFFER_SIZE 8192
 
-static const struct device *const cdc_dev = DEVICE_DT_GET_ONE(zephyr_cdc_acm_uart);
+/*
+ * The board already defines one CDC ACM function (board_cdc_acm_uart, from
+ * boards/common/usb/cdc_acm_serial.dtsi included by xiao_ble_common.dtsi): use it, so that the
+ * device exposes a single serial port.
+ */
+static const struct device *const cdc_dev = DEVICE_DT_GET(DT_NODELABEL(board_cdc_acm_uart));
 
 RING_BUF_DECLARE(tx_ring, TX_BUFFER_SIZE);
 static struct k_spinlock tx_lock;
 static uint32_t dropped_blocks;
+static atomic_t sessions;
 
 USBD_DEVICE_DEFINE(vdrum_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_RECEIVER_VID, USB_RECEIVER_PID);
 
@@ -74,6 +80,24 @@ static void usbd_message(struct usbd_context *const ctx, const struct usbd_msg *
 			(void)usbd_enable(ctx);
 		} else if (msg->type == USBD_MSG_VBUS_REMOVED) {
 			(void)usbd_disable(ctx);
+		}
+	}
+
+	/*
+	 * A host application opened the port (DTR raised): drop what piled up while nobody was
+	 * reading, and restart the drop counter so that it reflects this session only.
+	 */
+	if (msg->type == USBD_MSG_CDC_ACM_CONTROL_LINE_STATE) {
+		uint32_t dtr = 0;
+
+		(void)uart_line_ctrl_get(msg->dev, UART_LINE_CTRL_DTR, &dtr);
+		if (dtr) {
+			k_spinlock_key_t key = k_spin_lock(&tx_lock);
+
+			ring_buf_reset(&tx_ring);
+			dropped_blocks = 0;
+			k_spin_unlock(&tx_lock, key);
+			atomic_inc(&sessions);
 		}
 	}
 }
@@ -133,4 +157,9 @@ int usb_link_send(const uint8_t *data, size_t len)
 uint32_t usb_link_dropped(void)
 {
 	return dropped_blocks;
+}
+
+uint32_t usb_link_session(void)
+{
+	return (uint32_t)atomic_get(&sessions);
 }

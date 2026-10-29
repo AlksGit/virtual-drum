@@ -20,4 +20,7 @@ int usb_link_send(const uint8_t *data, size_t len);
 /* Blocks dropped because the host was not reading fast enough (or not connected). */
 uint32_t usb_link_dropped(void);
 
+/* Incremented each time a host application opens the port (DTR raised). */
+uint32_t usb_link_session(void);
+
 #endif /* VDRUM_USB_LINK_H */

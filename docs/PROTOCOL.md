@@ -53,6 +53,8 @@ gauche) et **élévation** (tangage, positif vers le haut). Le kit par défaut e
 ## USB CDC (récepteur → PC)
 Trame : `0xA5 0x5A | len u8 | rx_time_us u32 | rssi i8 | payload ESB (len octets) | crc8`.
 - `len` = longueur du payload seul. Overhead total : 9 octets.
+- `rssi` : puissance reçue en **dBm** (négative, ex. −40), mesurée par le récepteur.
+- `rx_time_us` : horloge du récepteur (RTC 32 768 Hz, résolution ~30,5 µs), reboucle après ~71 min.
 - `crc8` : **CRC-8/SMBUS** (poly 0x07, init 0x00, sans réflexion, sans xor final ;
   `crc8("123456789") = 0xF4`), calculé sur `len`, `rx_time_us`, `rssi` et le payload,
   c'est-à-dire tout ce qui est entre les octets de synchro et le crc.
