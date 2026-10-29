@@ -21,15 +21,16 @@ validation "sur cible" (flash, mesures) attend le matériel.
   > Demandé par l'utilisateur le 2026-10-29.
   > Blocked by: — (TASK-024 fait)
 
+## IN PROGRESS
 - [ ] TASK-026 | tools : prototype de détection des coups (Python, IMU simulée)
   > Simulateur d'IMU (gyro + accéléro dans le repère baguette, bruit, saturation ±2000 dps,
   > choc à l'impact) avec vérité terrain ; détecteur (pic de vitesse angulaire + décélération,
   > période réfractaire) et estimation de vélocité avant le pic ; métriques : faux positifs /
   > négatifs, latence de détection, corrélation de vélocité. Tests pytest. Sert de base à la
   > phase 1 sur données réelles.
+  > Branch: feat/task-026-detection-prototype
   > Blocked by: —
 
-## IN PROGRESS
 - [ ] TASK-027 | host : sortie MIDI vers un DAW
   > L'app envoie chaque coup en note MIDI (General MIDI batterie : caisse claire 38, charleston
   > fermée 42, toms 50/47/43, crash 49, ride 51), vélocité 1-127, sur une sortie choisie dans
