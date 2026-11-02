@@ -132,7 +132,7 @@ static void int1_isr(const struct device *port, struct gpio_callback *cb, uint32
 	ARG_UNUSED(port);
 	ARG_UNUSED(cb);
 	ARG_UNUSED(pins);
-	edge_time_us = (uint32_t)k_cyc_to_us_floor64(k_cycle_get_64());
+	edge_time_us = (uint32_t)k_ticks_to_us_floor64(k_uptime_ticks());
 	edge_pending = true;
 	k_sem_give(&fifo_ready);
 }
@@ -235,9 +235,12 @@ struct fifo_status {
  * lsm6ds3tr-c_reg.h (NCS v3.4.1): level = STATUS2[2:0] << 8 | STATUS1, overrun = STATUS2 bit 6,
  * pattern = STATUS4[1:0] << 8 | STATUS3. Register auto-increment (IF_INC) is set in configure().
  */
+/* Microseconds since boot. Not k_cycle_get_64(): without CONFIG_TIMER_HAS_64BIT_CYCLE_COUNTER
+ * (nRF52 RTC timer) it returns 0. Kernel ticks are 64-bit, 32768 per second (~30.5 us).
+ */
 static uint32_t now_us(void)
 {
-	return (uint32_t)k_cyc_to_us_floor64(k_cycle_get_64());
+	return (uint32_t)k_ticks_to_us_floor64(k_uptime_ticks());
 }
 
 static int read_fifo_status(struct fifo_status *out)
