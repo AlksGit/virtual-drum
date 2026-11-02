@@ -27,16 +27,8 @@ Conditions :
 | Débordements de FIFO IMU | 0 | 0 |
 
 - Critère de sortie de la phase 0 (« sans pertes significatives ») : atteint pour G, D à 0,6 %.
-- **Le taux de retransmissions est anormal** : 37 % sur G malgré un très bon signal, et
-  déjà ~40 % sur D seule (session courte, G éteinte). Ce ne sont donc pas les collisions entre
-  baguettes (~20 % prévus dans DECISIONS.md). G a 239 échecs pour 1 seule perte : les paquets
-  arrivent, ce sont les **accusés de réception** qui manquent.
-- Hypothèse : côté récepteur, l'ACK est préparé par logiciel dans l'interruption radio
-  (`on_radio_disabled_rx`, `nrf/subsys/esb/esb.c`) pendant que la radio monte en émission
-  (~40 µs avec la montée rapide). L'interruption USB du dongle a la même priorité (1) que la
-  radio ESB (`CONFIG_ESB_RADIO_IRQ_PRIORITY=1`) : un transfert USB en cours peut retarder l'ACK.
-  **Essai à faire** : récepteur avec `CONFIG_ESB_RADIO_IRQ_PRIORITY=0`, comparer les
-  retransmissions (2 min suffisent).
+- **Le taux de retransmissions est élevé** (37 % sur G, 47 % sur D) : ce sont les
+  **collisions entre les deux baguettes**, voir « Retransmissions : causes » ci-dessous.
 
 ### Horloges
 
@@ -94,8 +86,34 @@ le reste de la session (`analyze_rest.py --calibration N`) :
   récepteur n'empile plus rien port fermé, le logger ignore les 200
   premières ms, `analyze_rest.py` écarte ces paquets dans les anciennes sessions.
 
+## 2026-11-02 — retransmissions : causes (TASK-031)
+
+Mêmes conditions (baguettes au repos, USB), sessions de 1 à 2 min, `analyze_rest.py`.
+Les taux varient d'une session à l'autre (positions retouchées entre deux flashs, phase
+relative des baguettes) : seules les comparaisons faites d'affilée sont fiables.
+
+| Session | Configuration | Retrans. G | Retrans. D | Pertes D |
+|---|---|---|---|---|
+| 144325 | référence (récepteur A) | 36 % | 49 % | 0,8 % |
+| 150001 | radio du récepteur en priorité 0 | 42 % | 58 % | 1,7 % |
+| 151911 | sans montée radio rapide (3 cartes) | 53 % | 68 % | 2,3 % |
+| 152341 | référence, deux baguettes | 49 % | 69 % | 3,7 % |
+| 152555 | **G seule** | **3,9 %** | — | — |
+| 152757 | **D seule** | — | **2,4 %** | **0** |
+
+- Seule, chaque baguette retransmet peu (2 à 4 %) et ne perd rien : le récepteur, la priorité
+  de l'USB et la montée radio rapide ne sont pas en cause (les deux essais ne font pas mieux).
+- À deux, les retransmissions des baguettes sont corrélées seconde par seconde (0,4 à 0,66) :
+  **collisions**. Chaque baguette envoie un paquet toutes les 4,8 ms, un échange (paquet + ACK)
+  occupe ~0,75 ms ; les deux rythmes sont presque égaux (écart d'ODR 0,7 %), donc les baguettes
+  glissent lentement l'une contre l'autre et se chevauchent pendant de longues périodes. Les
+  retransmissions ajoutent de la charge et d'autres collisions : bien plus que les ~20 %
+  estimés dans DECISIONS.md.
+- La montée radio rapide reste activée (sans elle : pire).
+- Impact : pertes de 0,6 à 3,7 % sur D en mode RAW (phase 0). En jeu (HIT + ORIENT à 100 Hz),
+  la charge sera bien plus faible.
+
 ## Reste à mesurer (TASK-012)
-- Retransmissions avec la radio du récepteur en priorité 0 (essai ci-dessus).
 - Saturation du gyro sur des coups réels (jeu).
 - Dérive du lacet pendant 10 min de jeu.
 - Pertes avec les deux baguettes en mouvement, sur batterie, à distance de jeu.
