@@ -40,7 +40,9 @@
  * the airtime figures of DECISIONS.md assume it. Supported by the nRF52840 radio
  * (nrf_radio_fast_ramp_up_enable_set in esb.c).
  */
+#ifndef VDRUM_ESB_FAST_RAMP_UP /* overridable for measurements: -DEXTRA_CFLAGS=... */
 #define VDRUM_ESB_FAST_RAMP_UP true
+#endif
 
 /* CONFIG_ESB_MAX_PAYLOAD_LENGTH must be at least this (checked in each app). */
 #define VDRUM_ESB_MIN_PAYLOAD_CAPACITY RADIO_MAX_PAYLOAD
