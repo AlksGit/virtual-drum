@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <zephyr/irq.h>
 
@@ -46,6 +47,15 @@
 #define READ_SAMPLES_PER_TRANSFER 8u          /* 96 bytes per I2C read */
 #define ORDER_DETECTION_SAMPLES 64u
 #define MAX_DRAIN_ROUNDS 8u                   /* bounded: the FIFO refills while it is read */
+#define MAX_WRITE_LEN 8u                      /* longest register write made here: 1 byte */
+
+/* The IMU supply (lsm6ds3tr-c-en) is switched on at boot, but regulator_fixed_init skips its
+ * 3 ms startup-delay-us when the regulator is enabled at boot (regulator_common_init with
+ * is_enabled set, NCS v3.4.1): the first I2C read can come before the IMU is up, and it then
+ * times out (measured on the board: -ETIMEDOUT on WHO_AM_I, fine one second later).
+ */
+#define BOOT_WAIT_MS 10
+#define BOOT_ATTEMPTS 10
 
 /* Timestamp tracking: snap when the edge disagrees by more than this, else move 1/8 of the way. */
 #define SNAP_THRESHOLD_US (2u * IMU_SAMPLE_PERIOD_US)
@@ -90,8 +100,20 @@ static uint32_t detection_count;
 
 static int32_t bus_write(void *handle, uint8_t reg, const uint8_t *data, uint16_t len)
 {
+	/* One message (register address, then data): i2c_burst_write_dt sends two messages, which
+	 * the nRF TWIM driver must join in its concatenation buffer, and the xiao_ble devicetree
+	 * gives i2c0 none (no zephyr,concat-buf-size): such writes fail with -ENOSPC
+	 * (zephyr/drivers/i2c/i2c_nrfx_twim.c, NCS v3.4.1).
+	 */
+	uint8_t buffer[1u + MAX_WRITE_LEN];
+
 	ARG_UNUSED(handle);
-	return i2c_burst_write_dt(&bus, reg, data, len);
+	if (len > MAX_WRITE_LEN) {
+		return -EINVAL;
+	}
+	buffer[0] = reg;
+	memcpy(&buffer[1], data, len);
+	return i2c_write_dt(&bus, buffer, 1u + len);
 }
 
 static int32_t bus_read(void *handle, uint8_t reg, uint8_t *data, uint16_t len)
@@ -150,7 +172,14 @@ static int configure(void)
 	ctx.mdelay = bus_delay;
 	ctx.handle = NULL;
 
-	if (lsm6ds3tr_c_device_id_get(&ctx, &id) != 0) {
+	/* Wait for the IMU to answer (see BOOT_WAIT_MS). */
+	int32_t read_err = -EIO;
+
+	for (int i = 0; i < BOOT_ATTEMPTS && read_err != 0; i++) {
+		k_msleep(BOOT_WAIT_MS);
+		read_err = lsm6ds3tr_c_device_id_get(&ctx, &id);
+	}
+	if (read_err != 0) {
 		return -EIO;
 	}
 	if (id != LSM6DS3TR_C_ID) {
