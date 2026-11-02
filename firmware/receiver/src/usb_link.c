@@ -30,6 +30,7 @@ RING_BUF_DECLARE(tx_ring, TX_BUFFER_SIZE);
 static struct k_spinlock tx_lock;
 static uint32_t dropped_blocks;
 static atomic_t sessions;
+static atomic_t host_open; /* DTR raised: a host application has the port open */
 
 USBD_DEVICE_DEFINE(vdrum_usbd, DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)), USB_RECEIVER_VID, USB_RECEIVER_PID);
 
@@ -85,18 +86,24 @@ static void usbd_message(struct usbd_context *const ctx, const struct usbd_msg *
 
 	/*
 	 * A host application opened the port (DTR raised): drop what piled up while nobody was
-	 * reading, and restart the drop counter so that it reflects this session only.
+	 * reading, and restart the drop counter so that it reflects this session only. While the
+	 * port is closed nothing is queued (usb_link_send), so that a new session does not start
+	 * with old packets; the CDC ACM driver may still hold the few bytes it had already taken
+	 * (measured: up to ~2 min old at the next open), which host tools skip (tools/logger.py).
 	 */
 	if (msg->type == USBD_MSG_CDC_ACM_CONTROL_LINE_STATE) {
 		uint32_t dtr = 0;
 
 		(void)uart_line_ctrl_get(msg->dev, UART_LINE_CTRL_DTR, &dtr);
-		if (dtr) {
-			k_spinlock_key_t key = k_spin_lock(&tx_lock);
+		k_spinlock_key_t key = k_spin_lock(&tx_lock);
 
-			ring_buf_reset(&tx_ring);
+		ring_buf_reset(&tx_ring);
+		if (dtr) {
 			dropped_blocks = 0;
-			k_spin_unlock(&tx_lock, key);
+		}
+		atomic_set(&host_open, dtr ? 1 : 0);
+		k_spin_unlock(&tx_lock, key);
+		if (dtr) {
 			atomic_inc(&sessions);
 		}
 	}
@@ -139,6 +146,10 @@ int usb_link_init(void)
 
 int usb_link_send(const uint8_t *data, size_t len)
 {
+	if (!atomic_get(&host_open)) {
+		return -ENOTCONN; /* nobody reading: not a drop */
+	}
+
 	k_spinlock_key_t key = k_spin_lock(&tx_lock);
 
 	if (ring_buf_space_get(&tx_ring) < len) {

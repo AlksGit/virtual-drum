@@ -26,6 +26,10 @@ if __package__ in (None, ""):
 
 import serial  # noqa: E402
 
+# Bytes the receiver's USB driver still held from before the port was opened arrive first, and
+# can be minutes old (firmware/receiver/src/usb_link.c): skip what comes in this long after opening.
+STALE_SKIP_S = 0.2
+
 from vdrum.ports import describe_ports, find_receiver_port  # noqa: E402
 from vdrum.protocol import (  # noqa: E402
     FrameParser,
@@ -132,6 +136,8 @@ def run(args: argparse.Namespace) -> int:
         except serial.SerialException as error:
             print(f"Cannot open {port}: {error}")
             return 1
+        time.sleep(STALE_SKIP_S)
+        link.reset_input_buffer()
         read = lambda: link.read(max(1, link.in_waiting))  # noqa: E731
         close = link.close
         print(f"Recording from {port} (Ctrl+C to stop)")
