@@ -1,30 +1,37 @@
 # Backlog
 
-Note : hardware pas encore disponible (2026-10-29). Le code peut avancer, mais toute
-validation "sur cible" (flash, mesures) attend le matériel.
+Note : hardware reçu le 2026-11-02 (2 XIAO nRF52840 Sense + dongle nRF52840 Nordic comme
+récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASUREMENTS.md).
 
 ## TODO
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
 
+- [ ] TASK-031 | Radio : taux de retransmissions ESB anormal (37–47 %)
+  > Mesuré au repos (docs/MEASUREMENTS.md) : les paquets arrivent, les ACK manquent.
+  > Essai A/B prêt : récepteur `CONFIG_ESB_RADIO_IRQ_PRIORITY=0` (au-dessus de l'USB).
+  > Fait = retransmissions < 10 % au repos, ou cause identifiée. Flash du dongle requis (RESET).
+- [ ] TASK-032 | Gyro Z de la baguette G : raie à 769 Hz (40 % du bruit)
+  > Échanger la place des baguettes ; si la raie suit la carte, la caractériser.
 - [ ] TASK-012 | Mesures phase 0 (débit, pertes, saturation gyro, dérive lacet)
   > Sessions des deux baguettes enregistrées ; résultats chiffrés dans docs/ ;
   > critère de sortie de phase 0 atteint ou écarts identifiés.
-  > Hardware requis.
-  > Blocked by: TASK-010 (analyse), TASK-007/008/009 (chaîne complète)
+  > Fait (2026-11-02) : 10 min au repos (pertes, retransmissions, ODR, bruit, dérive du lacet),
+  > outil `tools/analyze_rest.py`. Reste : saturation gyro et dérive pendant le jeu (joueur requis).
 
 ## IN PROGRESS
 ## ON HOLD
-- [ ] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
-  > `west build` passe pour stick (Sense) et receiver ; `CONFIG_BUILD_OUTPUT_UF2=y` ;
-  > LED clignote après copie du .uf2 ; bootloader UF2 conservé (offset de partition
-  > vérifié et noté dans docs/HARDWARE.md).
-  > Hardware requis pour : flash + LED.
-  > Fait : build des deux apps, UF2 vérifié (0x27000, famille nRF52840), CI firmware avec UF2 en artefacts.
-  > Reason: reste le flash + LED, hardware requis (voir QUESTIONS.md).
 
 ## DONE
+- [x] TASK-030 | Premier démarrage sur cible : corrections firmware, récepteur sur dongle
+  > Merged in: devape (2026-11-02). IMU interrogée trop tôt au boot (délai du régulateur ignoré
+  > par Zephyr), écritures I²C en un message, horodatages à 0 (`k_cycle_get_64`), récepteur sur
+  > dongle nRF52840 (overlay LED, CI), paquets périmés en début de session, outil
+  > `tools/analyze_rest.py`, docs/MEASUREMENTS.md.
+- [x] TASK-003 | Blinky sur les deux types de XIAO, flash UF2
+  > Validé sur cible (2026-11-02) : flash UF2 des deux baguettes, LED, bootloader conservé.
+  > Récepteur sur dongle Nordic (DFU nrfutil) au lieu d'une XIAO.
 - [x] TASK-029 | Corrections pré-hardware issues de la revue experte (firmware, host, tools)
   > Merged in: devape (2026-10-29). Radio : l'init ESB échouait (délai < 435 µs), corrigé ; IMU qui
   > pouvait rester bloquée, horodatage revu (relu par un 2e agent) ; protocole v4 (compteurs dans
