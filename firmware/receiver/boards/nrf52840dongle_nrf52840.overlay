@@ -1,0 +1,12 @@
+/*
+ * Receiver on the nRF52840 Dongle (PCA10059): same LED meaning as on the XIAO, where led0 is
+ * red and led1 green. On the dongle led0 is the single green LED and led1 the red channel of
+ * the RGB LED (zephyr/boards/nordic/nrf52840dongle/nrf52840dongle_nrf52840_common.dtsi).
+ */
+
+/ {
+	aliases {
+		led0 = &led1_red;
+		led1 = &led0_green;
+	};
+};

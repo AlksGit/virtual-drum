@@ -43,8 +43,10 @@ static atomic_t queue_overflows;
 
 static uint32_t now_us(void)
 {
-	/* System timer (RTC, 32768 Hz on nRF52): ~30.5 us resolution, enough for phase 0. */
-	return (uint32_t)k_cyc_to_us_floor64(k_cycle_get_64());
+	/* Kernel ticks (RTC, 32768 Hz on nRF52): ~30.5 us resolution, enough for phase 0.
+	 * Not k_cycle_get_64(): without CONFIG_TIMER_HAS_64BIT_CYCLE_COUNTER it returns 0.
+	 */
+	return (uint32_t)k_ticks_to_us_floor64(k_uptime_ticks());
 }
 
 static void esb_event(struct esb_evt const *event)

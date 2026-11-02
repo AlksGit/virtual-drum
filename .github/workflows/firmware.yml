@@ -27,14 +27,24 @@ jobs:
             app: stick
             board: xiao_ble/nrf52840/sense
             extra: -DCONFIG_VDRUM_STICK_ID=0
+            artifact: zephyr.uf2
           - name: stick-right
             app: stick
             board: xiao_ble/nrf52840/sense
             extra: -DCONFIG_VDRUM_STICK_ID=1
+            artifact: zephyr.uf2
           - name: receiver
             app: receiver
             board: xiao_ble/nrf52840
             extra: ""
+            artifact: zephyr.uf2
+          # nRF52840 Dongle: flashed through its Nordic bootloader (nrfutil nrf5sdk-tools), from
+          # the .hex; see docs/HARDWARE.md.
+          - name: receiver-dongle
+            app: receiver
+            board: nrf52840dongle/nrf52840
+            extra: ""
+            artifact: zephyr.hex
 
     defaults:
       run:
@@ -67,9 +77,9 @@ jobs:
           west build -b "${{ matrix.board }}" "$GITHUB_WORKSPACE/project/firmware/${{ matrix.app }}" \
             -d "$GITHUB_WORKSPACE/build/${{ matrix.name }}" -p always -- ${{ matrix.extra }}
 
-      - name: Upload UF2
+      - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.name }}-uf2
-          path: build/${{ matrix.name }}/${{ matrix.app }}/zephyr/zephyr.uf2
+          name: ${{ matrix.name }}-firmware
+          path: build/${{ matrix.name }}/${{ matrix.app }}/zephyr/${{ matrix.artifact }}
           if-no-files-found: error

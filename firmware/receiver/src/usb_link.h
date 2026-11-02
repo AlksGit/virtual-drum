@@ -12,12 +12,13 @@
 int usb_link_init(void);
 
 /*
- * Queues bytes for the host. Thread context only. Returns 0, or -ENOSPC if the whole block does
- * not fit (it is then dropped entirely, so the host never sees half a frame).
+ * Queues bytes for the host. Thread context only. Returns 0, -ENOTCONN if no host application
+ * has the port open (nothing queued), or -ENOSPC if the whole block does not fit (it is then
+ * dropped entirely, so the host never sees half a frame).
  */
 int usb_link_send(const uint8_t *data, size_t len);
 
-/* Blocks dropped because the host was not reading fast enough (or not connected). */
+/* Blocks dropped because the host was not reading fast enough. */
 uint32_t usb_link_dropped(void);
 
 /* Incremented each time a host application opens the port (DTR raised). */

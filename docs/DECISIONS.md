@@ -68,6 +68,11 @@ Format : date — décision — pourquoi — alternatives écartées.
   dans le sampler (`<pad>_v<N>`, normalisées ensemble pour garder la dynamique enregistrée).
   — Repo public : CC0 évite toute obligation d'attribution ou de partage ; le script garde le
   repo léger. Écartés : Salamander (CC-BY-SA, archive de 387 Mo), samples commités dans le repo.
+- **2026-11** — Récepteur : **nRF52840 Dongle** Nordic (matériel reçu), au lieu de la 3ᵉ XIAO
+  prévue. — Même puce et même firmware ; seuls changent la board (`nrf52840dongle/nrf52840`),
+  les alias de LED (overlay) et le flash (DFU série `nrfutil nrf5sdk-tools`, pas d'UF2).
+  La XIAO reste supportée (CI). Pour les pédales (ADC), le dongle expose moins de broches :
+  à réévaluer en phase 4.
 - **2026-10** — Revue experte avant hardware (TASK-029) :
   - délais de retransmission ESB **500 µs (baguette 0) et 1250 µs (baguette 1)**. ESB refuse
     moins de 435 µs (`RETRANSMIT_DELAY_MIN`, l'init échouait avec 250/340 µs), et l'écart doit
