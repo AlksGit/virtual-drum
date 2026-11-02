@@ -8,10 +8,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
 
-- [ ] TASK-031 | Radio : taux de retransmissions ESB anormal (37–47 %)
-  > Mesuré au repos (docs/MEASUREMENTS.md) : les paquets arrivent, les ACK manquent.
-  > Essai A/B prêt : récepteur `CONFIG_ESB_RADIO_IRQ_PRIORITY=0` (au-dessus de l'USB).
-  > Fait = retransmissions < 10 % au repos, ou cause identifiée. Flash du dongle requis (RESET).
+- [ ] TASK-033 | Radio : créneaux synchronisés entre les deux baguettes (mode RAW)
+  > Cause des pertes identifiée (TASK-031) : collisions entre baguettes. Le récepteur mesure la
+  > phase d'arrivée de chaque baguette et renvoie à la baguette 1 une correction dans le payload
+  > d'ACK ; la baguette 1 cale l'envoi de ses paquets RAW à une demi-période de la baguette 0.
+  > Fait = retransmissions < 10 % et pertes < 0,1 % à deux baguettes au repos (10 min).
+  > Protocole : payload d'ACK à définir (PROTOCOL.md + version).
 - [ ] TASK-032 | Gyro Z de la baguette G : raie à 769 Hz (40 % du bruit)
   > Échanger la place des baguettes ; si la raie suit la carte, la caractériser.
 - [ ] TASK-012 | Mesures phase 0 (débit, pertes, saturation gyro, dérive lacet)
@@ -24,6 +26,10 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-031 | Radio : cause des retransmissions ESB (37–69 %)
+  > Fait (2026-11-02) : collisions entre les deux baguettes (2–4 % chacune seule). Écartés par
+  > mesure : priorité USB du récepteur, montée radio rapide, plus de retransmissions / file ESB
+  > plus grande (engorgement). docs/MEASUREMENTS.md. Suite : TASK-033.
 - [x] TASK-030 | Premier démarrage sur cible : corrections firmware, récepteur sur dongle
   > Merged in: devape (2026-11-02). IMU interrogée trop tôt au boot (délai du régulateur ignoré
   > par Zephyr), écritures I²C en un message, horodatages à 0 (`k_cycle_get_64`), récepteur sur

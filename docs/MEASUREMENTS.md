@@ -113,6 +113,22 @@ relative des baguettes) : seules les comparaisons faites d'affilée sont fiables
 - Impact : pertes de 0,6 à 3,7 % sur D en mode RAW (phase 0). En jeu (HIT + ORIENT à 100 Hz),
   la charge sera bien plus faible.
 
+Essais de réglage (baguettes seulement, mêmes conditions) :
+
+| Session | Réglage | G : retrans. / pertes / file pleine | D : retrans. / pertes / file pleine | RSSI G / D |
+|---|---|---|---|---|
+| 154201 | 8 retransmissions | 75 % / 0,38 % / 7 | 53 % / 0,18 % / 46 | −69 / −55 dBm |
+| 154929 | 8 retrans. + file ESB de 16 | 79 % / 0,01 % / 0 | 127 % / 2,7 % / 558 | −66 / −71 dBm |
+
+- Plus de retransmissions = plus de temps d'antenne = plus de collisions : à signal faible
+  (D à −71 dBm), le lien s'engorge (plus de tentatives que de paquets). Pas de gain net ;
+  **réglage d'origine conservé** (3 retransmissions, file de 8).
+- Le RSSI varie de −52 à −71 dBm entre sessions (cartes déplacées à chaque double-tap) : cet
+  effet est du même ordre que les réglages testés. Pour départager des réglages fins, il
+  faudra des sessions plus longues et des cartes fixées.
+- Solution de fond (prévue dans DECISIONS.md) : **créneaux synchronisés** — le récepteur
+  décale une baguette d'une demi-période via les payloads d'ACK, les paquets alternent.
+
 ## Reste à mesurer (TASK-012)
 - Saturation du gyro sur des coups réels (jeu).
 - Dérive du lacet pendant 10 min de jeu.
