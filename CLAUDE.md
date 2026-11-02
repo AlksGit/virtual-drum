@@ -31,7 +31,9 @@ docs/
 ## Toolchain & commandes
 - Firmware : **nRF Connect SDK (Zephyr)**, build avec `west`.
   - Baguette : `west build -b xiao_ble/nrf52840/sense firmware/stick`
-  - Récepteur : `west build -b xiao_ble/nrf52840 firmware/receiver`
+  - Récepteur : `west build -b nrf52840dongle/nrf52840 firmware/receiver` (dongle Nordic, matériel
+    actuel ; flash par `nrfutil nrf5sdk-tools`, voir `docs/HARDWARE.md`), ou
+    `-b xiao_ble/nrf52840` pour une XIAO.
   - Noms vérifiés pour NCS v3.4.1 (`west boards` → `xiao_ble`, variante `sense` dans
     `zephyr/boards/seeed/xiao_ble/board.yml`).
   - `west` se lance via la toolchain : `nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west ...`
@@ -72,6 +74,6 @@ Le dev se fait sur un PC puis sur un Mac. Le repo git est le seul lien entre les
 
 ## Matériel disponible
 - 2× Seeed XIAO nRF52840 **Sense** (baguettes, IMU LSM6DS3TR-C intégré)
-- 1× Seeed XIAO nRF52840 (récepteur USB)
+- 1× nRF52840 Dongle Nordic (récepteur USB)
 - LiPo 3,7 V petite capacité (à souder sur les pads BAT)
 - Pas encore : magnétomètre externe, pads de pédales, caméra IR

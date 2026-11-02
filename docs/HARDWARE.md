@@ -4,7 +4,8 @@
 | Rôle | Carte | Réf. Seeed | Notes |
 |---|---|---|---|
 | Baguette ×2 | XIAO nRF52840 **Sense** | 102010469 | nRF52840 + IMU LSM6DS3TR-C + micro PDM, 21 × 17,5 mm |
-| Récepteur ×1 | XIAO nRF52840 (non-Sense) | — | USB natif, servira aussi d'entrée ADC pour les pédales |
+| Récepteur ×1 | **nRF52840 Dongle** (Nordic PCA10059) | — | Matériel reçu (2026-11-02). Même puce, USB natif |
+| Récepteur (alternative) | XIAO nRF52840 (non-Sense) | — | Toujours supporté par le firmware (UF2) |
 
 Batteries : LiPo 3,7 V ~100–150 mAh (en stock au bureau, à vérifier : capacité, connecteur, protection).
 
@@ -52,6 +53,22 @@ Source : pilote ST livré avec NCS v3.4.1 (`modules/hal/st/sensor/stmemsc/lsm6ds
 | ODR disponibles (extrait) | 1,66 kHz, 3,33 kHz, 6,66 kHz (accéléro et gyro) |
 | Taille de la FIFO | à vérifier dans la datasheet (non confirmé ici) |
 
+## Premier démarrage (2026-11-02) — constaté sur les cartes
+- **IMU pas prête au boot** : la première lecture de WHO_AM_I finissait en timeout I²C
+  (-ETIMEDOUT), puis l'IMU répondait (WHO_AM_I = 0x6A à l'adresse 0x6A). Cause :
+  `regulator_fixed_init` n'applique pas le `startup-delay-us` (3 ms) du régulateur
+  `lsm6ds3tr-c-en` quand il est activé au boot. L'exemple Zephyr `samples/sensor/lsm6dsl`
+  échoue de la même façon. Correctif : le firmware interroge WHO_AM_I jusqu'à 100 ms.
+- **Écritures I²C** : `i2c_burst_write` exige un tampon de concaténation TWIM que le devicetree
+  `xiao_ble` ne déclare pas → écriture en un seul message (adresse + données).
+- **Horodatage** : `k_cycle_get_64()` renvoie 0 sur nRF52 (pas de compteur 64 bits) ; on utilise
+  `k_uptime_ticks()` (32768 Hz).
+- **Résultats** : chaque baguette envoie ~1650–1680 échantillons/s au dongle, accéléro à plat
+  ≈ 1,02 g, RSSI ≈ −68 dBm à 1 m. Mesuré sur la baguette G : ~1680 échantillons/s (0,8 % au-dessus
+  de 1666) — à confirmer par la mesure d'ODR sur 10 min ci-dessous.
+- LED baguette : sans récepteur, la rouge reste allumée (chaque paquet échoue) ; ce n'est pas
+  un échec de démarrage. Avec récepteur : bleue qui clignote.
+
 ## À vérifier au premier démarrage sur carte (firmware baguette)
 Points relevés par la revue experte (TASK-029), non vérifiables sans matériel :
 - lecture en rafale de FIFO_DATA_OUT : comparer une lecture groupée et une lecture mot par mot
@@ -64,7 +81,22 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   les mesures de TASK-012.
 
 ## Flash / debug
-- UF2 : double-tap sur reset → disque USB → copier `zephyr.uf2`.
+- UF2 (XIAO) : double-tap sur reset → disque `XIAO-SENSE` → copier `zephyr.uf2`. La carte
+  redémarre seule ; le bootloader n'est jamais écrasé. Les baguettes n'ont pas d'USB dans leur
+  firmware : une fois flashées, elles n'apparaissent plus sur le PC (normal).
+- Dongle nRF52840 (récepteur) : board `nrf52840dongle/nrf52840` (application à 0x1000, après le
+  MBR, compatible avec le bootloader Nordic d'usine). Appuyer sur le bouton **RESET** de la
+  tranche (poussé latéralement, pas SW1) → LED rouge qui pulse → port série « nRF52 SDFU USB »
+  (VID 0x1915, PID 0x521F). Puis :
+  ```
+  nrfutil install nrf5sdk-tools
+  nrfutil nrf5sdk-tools pkg generate --hw-version 52 --sd-req=0x00 --application build/.../zephyr/zephyr.hex --application-version 1 receiver.zip
+  nrfutil nrf5sdk-tools dfu usb-serial -pkg receiver.zip -p COMx
+  ```
+  Source : `zephyr/boards/nordic/nrf52840dongle/doc/index.rst`. LED : rouge = erreur,
+  vert = activité (overlay `firmware/receiver/boards/nrf52840dongle_nrf52840.overlay`).
+- Câbles USB-C : certains ne font que charger (carte sans LED, rien côté PC). Garder un câble
+  données identifié.
 - Pas de sonde SWD requise. Si besoin de debug pas-à-pas : pads SWD au dos + J-Link / nRF DK.
 
 ## Montage mécanique (plus tard)
