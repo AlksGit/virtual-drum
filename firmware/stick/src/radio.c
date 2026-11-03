@@ -111,6 +111,7 @@ int radio_start(uint8_t stick_id)
 	config.retransmit_count = VDRUM_ESB_RETRANSMIT_COUNT;
 	config.tx_mode = ESB_TXMODE_AUTO;
 	config.use_fast_ramp_up = VDRUM_ESB_FAST_RAMP_UP;
+	config.tx_output_power = VDRUM_ESB_TX_POWER_DBM;
 
 	err = esb_init(&config);
 	err = err ? err : esb_set_rf_channel(VDRUM_ESB_RF_CHANNEL);
