@@ -8,6 +8,9 @@
  * ESB setup follows nrf/samples/esb/esb_prx (NCS v3.4.1). The radio event handler runs in
  * interrupt context: it only copies payloads into a message queue; a thread builds the frames.
  *
+ * Host commands for a stick (pkt_cmd, docs/PROTOCOL.md) go back in the ACK of the stick's
+ * next packet: ESB PRX attaches the payload queued for that pipe.
+ *
  * LEDs (active low, xiao_ble_common.dtsi): green blinks slowly while idle and flickers while
  * packets arrive; red lights when frames had to be dropped (host not reading).
  */
@@ -103,6 +106,29 @@ static int radio_init(void)
 	return err;
 }
 
+/*
+ * Host command for a stick (system work queue). Only the latest command is kept: older
+ * queued ACK payloads are flushed, so a stick never receives a burst of stale commands.
+ */
+static void on_host_command(const uint8_t *payload, uint8_t len)
+{
+	if (len != sizeof(struct pkt_cmd) || payload[0] != PKT_CMD || payload[1] >= VDRUM_ESB_PIPE_COUNT) {
+		return;
+	}
+
+	struct esb_payload ack = {
+		.length = len,
+		.pipe = VDRUM_ESB_PIPE_FOR_STICK(payload[1]),
+	};
+
+	memcpy(ack.data, payload, len);
+	/* esb_flush_tx() needs the radio idle (-EBUSY while receiving): a short RX pause. */
+	(void)esb_stop_rx();
+	(void)esb_flush_tx();
+	(void)esb_write_payload(&ack);
+	(void)esb_start_rx();
+}
+
 /* Builds one USB frame around a radio payload. Returns the frame size. */
 static size_t build_frame(const struct rx_packet *packet, uint8_t *frame)
 {
@@ -139,7 +165,7 @@ int main(void)
 
 	leds_init();
 
-	if (usb_link_init() != 0 || radio_init() != 0) {
+	if (radio_init() != 0 || usb_link_init(on_host_command) != 0) {
 		/* Fatal setup error: steady red. */
 		(void)gpio_pin_set_dt(&led_red, 1);
 		return 0;

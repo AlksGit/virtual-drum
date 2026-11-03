@@ -5,16 +5,24 @@
  * failed payload still at the head of its FIFO (nrf/subsys/esb/esb.c, on_radio_disabled_tx_wait
  * _for_ack): the payload is dropped (the receiver sees a gap in seq) and TX restarted, so that a
  * lost packet never stalls the stream.
+ *
+ * The receiver can send a command back in an ACK payload (pkt_cmd, docs/PROTOCOL.md):
+ * CMD_ENTER_BOOTLOADER restarts the stick into its UF2 bootloader, so that it is flashed
+ * without the double tap on the reset button.
  */
 
 #include "radio.h"
 
 #include <errno.h>
+#include <stddef.h>
 #include <string.h>
 
 #include <esb.h>
+#include <hal/nrf_power.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/reboot.h>
 
 #include "imu.h"
 #include "radio_config.h"
@@ -25,7 +33,14 @@ BUILD_ASSERT(VDRUM_ESB_RETRANSMIT_DELAY_US(0) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_
 		     VDRUM_ESB_RETRANSMIT_DELAY_US(1) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US,
 	     "esb_init rejects retransmit delays below 435 us");
 
-#define FIRMWARE_VERSION 2
+#define FIRMWARE_VERSION 3
+
+/*
+ * GPREGRET value that makes the Adafruit nRF52 bootloader (the XIAO's UF2 bootloader) start in
+ * UF2 mode after a reset: DFU_MAGIC_UF2_RESET in src/main.c of
+ * github.com/adafruit/Adafruit_nRF52_Bootloader (check_dfu_mode reads NRF_POWER->GPREGRET).
+ */
+#define BOOTLOADER_UF2_MAGIC 0x57
 
 static uint8_t stick;
 static uint16_t next_seq;
@@ -40,9 +55,35 @@ static K_MUTEX_DEFINE(write_lock);
 static struct pkt_raw raw;
 static uint32_t raw_first_time;
 
+/* Runs in the radio interrupt. */
+static void handle_ack_payloads(void)
+{
+	struct esb_payload payload;
+
+	while (esb_read_rx_payload(&payload) == 0) {
+		if (payload.length != sizeof(struct pkt_cmd) || payload.data[0] != PKT_CMD ||
+		    payload.data[1] != stick) {
+			continue;
+		}
+		const uint8_t cmd = payload.data[offsetof(struct pkt_cmd, cmd)];
+		const uint32_t magic = sys_get_le32(&payload.data[offsetof(struct pkt_cmd, magic)]);
+
+		if (magic != CMD_MAGIC || k_uptime_get() < CMD_IGNORE_AFTER_BOOT_MS) {
+			continue;
+		}
+		if (cmd == CMD_ENTER_BOOTLOADER) {
+			nrf_power_gpregret_set(NRF_POWER, 0, BOOTLOADER_UF2_MAGIC);
+			sys_reboot(SYS_REBOOT_COLD);
+		}
+	}
+}
+
 static void esb_event(struct esb_evt const *event)
 {
 	switch (event->evt_id) {
+	case ESB_EVENT_RX_RECEIVED:
+		handle_ack_payloads();
+		break;
 	/* One event may stand for several packets (esb_evt_irq_handler merges interrupt flags):
 	 * sent and retries are approximate, failed is exact enough for loss statistics.
 	 */

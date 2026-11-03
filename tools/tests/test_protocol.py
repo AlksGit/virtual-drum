@@ -16,7 +16,7 @@ def header_defines():
     defines = {}
     for name, value in re.findall(r"#define\s+(\w+)\s+(0x[0-9A-Fa-f]+|\d+)\b", text):
         defines[name] = int(value, 0)
-    for name, value in re.findall(r"(PKT_\w+)\s*=\s*(0x[0-9A-Fa-f]+)", text):
+    for name, value in re.findall(r"((?:PKT|CMD)_\w+)\s*=\s*(0x[0-9A-Fa-f]+)", text):
         defines[name] = int(value, 0)
     return defines
 
@@ -25,6 +25,7 @@ def header_defines():
     "PROTO_VERSION", "PKT_RAW", "PKT_HIT", "PKT_ORIENT", "PKT_STATUS", "RAW_MAX_SAMPLES",
     "QUAT_Q14_ONE", "USB_SYNC0", "USB_SYNC1", "USB_FRAME_HEADER_SIZE", "USB_FRAME_OVERHEAD",
     "USB_RECEIVER_VID", "USB_RECEIVER_PID", "CRC8_POLY", "CRC8_INIT",
+    "PKT_CMD", "CMD_ENTER_BOOTLOADER", "CMD_MAGIC", "CMD_IGNORE_AFTER_BOOT_MS", "USB_CMD_FRAME_OVERHEAD",
 ])
 def test_constants_match_protocol_h(name):
     assert getattr(p, name) == header_defines()[name]
@@ -145,3 +146,11 @@ def test_table_crc_matches_the_bitwise_reference():
         data = bytes(rng.randrange(256) for _ in range(length))
         assert p.crc8(data) == p.crc8_bitwise(data)
     assert p.crc8(b"123456789") == 0xF4
+
+
+def test_command_frame_layout():
+    frame = p.encode_command_frame(1, p.CMD_ENTER_BOOTLOADER)
+    # sync, len 9, pkt_cmd {type 0x10, stick 1, seq 0, cmd 1, magic "UF2!"}, crc8
+    assert frame[:-1] == bytes.fromhex("A5 5A 09 10 01 00 00 01 55 46 32 21")
+    assert frame[-1] == p.crc8(frame[2:-1])
+    assert len(frame) == p.USB_CMD_FRAME_OVERHEAD + 9

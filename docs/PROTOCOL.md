@@ -1,4 +1,4 @@
-# Protocol — version 4 (brouillon, phase 0)
+# Protocol — version 5 (brouillon, phase 0)
 
 Source de vérité : `firmware/common/protocol.h`. Toute modif ici ⇄ là ⇄ parseur Python
 (`tools/`), et incrément de `PROTO_VERSION`.
@@ -11,7 +11,7 @@ Payload ESB **dynamique** (DPL), jusqu'à 105 octets (`RADIO_MAX_PAYLOAD`) ; `CO
 En-tête commun (4 octets) :
 | Champ | Type | Description |
 |---|---|---|
-| `type` | u8 | 0x01 RAW, 0x02 HIT, 0x03 ORIENT, 0x04 STATUS |
+| `type` | u8 | 0x01 RAW, 0x02 HIT, 0x03 ORIENT, 0x04 STATUS, 0x10 CMD (récepteur → baguette) |
 | `stick_id` | u8 | 0 = gauche, 1 = droite |
 | `seq` | u16 | compteur par baguette (détection de pertes) |
 
@@ -60,6 +60,25 @@ démarrage, qui rebouclent à 2¹⁶ (comparer par différence modulo 2¹⁶) :
 Taille : 21 octets. Les STATUS prennent leur `seq` dans le même compteur que les RAW : pour
 compter les pertes, il faut considérer les `seq` de tous les types de paquets.
 
+### 0x10 CMD (récepteur → baguette, dans un payload d'ACK)
+Le récepteur place la commande dans l'ACK du prochain paquet de la baguette visée (ESB PRX,
+payload d'ACK sur le pipe de la baguette). Il ne garde que la dernière commande reçue.
+| Champ | Type | Description |
+|---|---|---|
+| en-tête | 4 o | `type` 0x10, `stick_id` = baguette visée, `seq` 0 |
+| `cmd` | u8 | 0x01 ENTER_BOOTLOADER : redémarre dans le bootloader UF2 |
+| `magic` | u32 | `0x21324655` (« UF2! ») ; toute autre valeur est ignorée |
+
+Taille : 9 octets. La baguette ignore les commandes pendant ses 2 premières secondes
+(`CMD_IGNORE_AFTER_BOOT_MS`) : une commande restée en file au récepteur pendant le flash est
+consommée sans effet au redémarrage. ENTER_BOOTLOADER écrit `0x57` dans GPREGRET
+(`DFU_MAGIC_UF2_RESET` du bootloader Adafruit nRF52) puis redémarre. Outil : `tools/flash_stick.py`.
+
+## USB CDC (PC → récepteur)
+Trame : `0xA5 0x5A | len u8 | payload (len octets, un paquet CMD) | crc8`, crc8 (même CRC que
+ci-dessous) sur `len` et le payload. Overhead : 4 octets. Le récepteur jette les trames
+invalides et se resynchronise sur `0xA5 0x5A`.
+
 ## USB CDC (récepteur → PC)
 Trame : `0xA5 0x5A | len u8 | rx_time_us u32 | rssi i8 | payload ESB (len octets) | crc8`.
 - `len` = longueur du payload seul. Overhead total : 9 octets.
@@ -83,6 +102,8 @@ A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
 ```
 
 ## Historique
+- v5 (2026-11) : commande CMD (0x10) du PC vers une baguette via le récepteur, ENTER_BOOTLOADER
+  pour flasher sans double appui sur reset.
 - v4 (2026-10) : compteurs radio et IMU dans STATUS (21 octets), issus de la revue experte.
 - v3 (2026-10) : RAW jusqu'à 8 échantillons par paquet, payload ESB dynamique (105 o max).
 - v2 (2026-10) : convention de repère des quaternions (baguette → monde, axes du monde).
