@@ -36,7 +36,6 @@ CLEARANCE = 0.15  # per side, board in its pocket
 TOP_GAP = 0.35  # above the RF shield
 BOTTOM_GAP = 1.0  # under the PCB: room for 1 mm double-sided foam tape that holds the board
 USB_CLEARANCE = 0.3
-PEG_CLEARANCE = 0.1  # radial, cap pegs in their holes (friction fit)
 JOINT_CLEARANCE = 0.15  # radial, shaft spigot in the handle socket (glued)
 
 # --- Stick shape (mm) -----------------------------------------------------------------
@@ -54,7 +53,12 @@ GROOVE_X, GROOVE_W, GROOVE_D = 70.0, 3.0, 0.8  # zip tie that holds the USB cabl
 TEST_BUTT_X = 32.0  # test pieces: board pocket, and both sides of the joint
 TEST_JOINT_MARGIN = 8.0
 
-PEG_R, PEG_LEN = 1.2, 5.0
+# Peg holes in the handle stay at 1.3 mm (handles already printed); the pegs shrank from
+# 1.2 to 1.15 mm: 0.1 mm of radial clearance was too tight to remove the cap without breaking it.
+PEG_HOLE_R, PEG_R, PEG_LEN = 1.3, 1.15, 5.0
+PEG_TIP = 0.4  # chamfer length at the peg tip, to start the insertion
+# Lever slot in the inner face of the cap, on the +Y flank: a flat screwdriver pushes it out.
+LEVER_W, LEVER_DEPTH, LEVER_RADIAL = 5.0, 0.8, 1.0
 PEG_YZ = ((3.0, -4.5), (-3.0, -4.5))
 # The flat keys the orientation and vents the glue. It is on top (+Z): printed flat, the socket
 # roof is then a short bridge instead of a sagging arch.
@@ -133,8 +137,20 @@ def board_cavity():
     rx, ry, _ = to_stick(RESET_XZ[0], 0.0, RESET_XZ[1])
     reset = cq.Solid.makeCylinder(1.25, 20.0, cq.Vector(rx, ry, 0.0), cq.Vector(0, 0, 1))
     leds = board_box(LEDS_X[0] - 0.4, LEDS_X[1] + 0.4, 0.0, 20.0, LEDS_Z[0] - 0.5, LEDS_Z[1] + 0.5)
-    pegs = [cylinder_x(PEG_R + PEG_CLEARANCE, CAP_T - 1, CAP_T + PEG_LEN + 0.5, y, z) for y, z in PEG_YZ]
+    pegs = [cylinder_x(PEG_HOLE_R, CAP_T - 1, CAP_T + PEG_LEN + 0.5, y, z) for y, z in PEG_YZ]
     return pcb_and_parts.fuse(usb, reset, leds, *pegs)
+
+
+def peg(y, z):
+    tip_x = CAP_T + PEG_LEN - PEG_TIP
+    body = cylinder_x(PEG_R, CAP_T - 0.1, tip_x, y, z)
+    tip = cq.Solid.makeCone(PEG_R, PEG_R - PEG_TIP, PEG_TIP, cq.Vector(tip_x, y, z), cq.Vector(1, 0, 0))
+    return body.fuse(tip)
+
+
+def lever_slot():
+    """Notch in the inner face of the cap, on the +Y flank."""
+    return box(CAP_T - LEVER_DEPTH, CAP_T + 0.1, BUTT_A - LEVER_RADIAL, BUTT_A + 1, -LEVER_W / 2, LEVER_W / 2)
 
 
 def keyed_cylinder(r, x0, flat):
@@ -165,8 +181,8 @@ def build():
         USB_Y[0] - USB_CLEARANCE, USB_Y[1] + USB_CLEARANCE,
         USB_Z[0] - USB_CLEARANCE, USB_Z[1] + USB_CLEARANCE,
     )
-    pegs = [cylinder_x(PEG_R, CAP_T - 0.1, CAP_T + PEG_LEN, y, z) for y, z in PEG_YZ]
-    cap = plate.cut(usb_hole).fuse(*pegs).clean()
+    pegs = [peg(y, z) for y, z in PEG_YZ]
+    cap = plate.cut(usb_hole).cut(lever_slot()).fuse(*pegs).clean()
     return {"handle": handle, "shaft": shaft, "cap": cap}
 
 
