@@ -22,7 +22,9 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Sessions des deux baguettes enregistrées ; résultats chiffrés dans docs/ ;
   > critère de sortie de phase 0 atteint ou écarts identifiés.
   > Fait (2026-11-02) : 10 min au repos (pertes, retransmissions, ODR, bruit, dérive du lacet),
-  > outil `tools/analyze_rest.py`. Reste : saturation gyro et dérive pendant le jeu (joueur requis).
+  > outil `tools/analyze_rest.py`.
+  > Fait (2026-11-03) : coups secs, pas de saturation du gyro (1409 °/s max), accéléro à 13,6 g.
+  > Reste : dérive du lacet pendant le jeu, une baguette à la fois (pertes radio en jeu à deux).
 
 ## IN PROGRESS
 ## ON HOLD

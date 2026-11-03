@@ -129,7 +129,34 @@ Essais de réglage (baguettes seulement, mêmes conditions) :
 - Solution de fond (prévue dans DECISIONS.md) : **créneaux synchronisés** — le récepteur
   décale une baguette d'une demi-période via les payloads d'ACK, les paquets alternent.
 
+## 2026-11-03 — coups secs, saturation (TASK-012)
+
+Session `session_20261103_153541` (75 s, `--save-raw`). Les deux baguettes imprimées
+(`mech/stick`), câble USB branché, coups secs dans le vide de plus en plus forts, des deux
+mains, puis roulements. Récepteur : dongle sur le PC.
+
+| | Baguette G | Baguette D | Pleine échelle |
+|---|---|---|---|
+| Gyro max par axe (x / y / z) | 953 / 1224 / 1110 °/s | 803 / 1355 / 527 °/s | ±2000 °/s |
+| Norme du gyro max | 1409 °/s | 1357 °/s | |
+| Accéléro max par axe (x / y / z) | 3,6 / 12,5 / 10,8 g | 4,2 / 11,4 / 13,6 g | ±16 g |
+| Échantillons saturés | 0 | 0 | |
+| Paquets reçus | ~50 % | ~85 % | |
+
+- **Pas de saturation du gyro** : 68 % de la pleine échelle au plus, la marge suffit pour des
+  coups dans le vide. À revérifier en frappant un vrai pad (arrêt brutal), phase 1.
+- **L'accéléromètre approche la saturation** : 13,6 g sur 16 g. La carte est au talon, loin du
+  poignet : l'accélération centripète y est forte. Sans conséquence pour la vélocité (estimée sur
+  le gyro), à surveiller si la détection utilise l'accéléro.
+- Réserve : G a perdu la moitié de ses paquets, des pics ont pu être manqués ; D (85 % reçus)
+  donne les mêmes ordres de grandeur.
+- **Le lien radio ne tient pas en jeu** : réception de G entre 13 et 40 % pendant de longues
+  périodes, D entre 75 et 96 %, RSSI −65 à −79 dBm (−59 dBm une fois posées). Trous jusqu'à 1,2 s.
+  Collisions entre baguettes (TASK-031) aggravées par la baisse du signal en mouvement (main,
+  corps). Conséquence : l'orientation ne peut pas être intégrée à travers ces trous ; la mesure
+  de dérive en jeu se fait **une baguette à la fois** (seule, une baguette ne perd presque rien,
+  TASK-031) en attendant les créneaux synchronisés (TASK-033).
+
 ## Reste à mesurer (TASK-012)
-- Saturation du gyro sur des coups réels (jeu).
 - Dérive du lacet pendant 10 min de jeu.
 - Pertes avec les deux baguettes en mouvement, sur batterie, à distance de jeu.
