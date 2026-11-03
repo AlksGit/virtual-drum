@@ -4,12 +4,6 @@ Note : hardware reçu le 2026-11-02 (2 XIAO nRF52840 Sense + dongle nRF52840 Nor
 récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASUREMENTS.md).
 
 ## TODO
-- [ ] TASK-034 | Baguettes imprimées : impression et montage
-  > Modèle fait (`mech/stick/stick.py`, mergé 2026-11-03). Fait = deux baguettes imprimées et
-  > montées, carte tenue sans jeu, USB-C et reset accessibles ; axes de l'IMU relevés dans le
-  > repère baguette (test de gravité) et notés dans docs/HARDWARE.md. Retours d'impression
-  > (jeux, solidité du collage) reportés dans le script.
-  > Blocked by: —
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
@@ -22,6 +16,8 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Protocole : payload d'ACK à définir (PROTOCOL.md + version).
 - [ ] TASK-032 | Gyro Z de la baguette G : raie à 769 Hz (40 % du bruit)
   > Échanger la place des baguettes ; si la raie suit la carte, la caractériser.
+  > 2026-11-03 : raie toujours là (758–768 Hz, 28 à 87 % du bruit du gyro Z) avec la carte
+  > montée dans la baguette imprimée et posée ailleurs : elle suit probablement la carte.
 - [ ] TASK-012 | Mesures phase 0 (débit, pertes, saturation gyro, dérive lacet)
   > Sessions des deux baguettes enregistrées ; résultats chiffrés dans docs/ ;
   > critère de sortie de phase 0 atteint ou écarts identifiés.
@@ -32,6 +28,10 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-034 | Baguettes imprimées : modèle, impression et montage
+  > Merged in: devape (2026-11-03). `mech/stick/stick.py` (CadQuery), deux pièces collées +
+  > embout, pièces de test des jeux. Deux baguettes imprimées (Bambu P2S), montées, émettent.
+  > Axes de l'IMU = axes de la baguette (test de gravité, docs/HARDWARE.md).
 - [x] TASK-031 | Radio : cause des retransmissions ESB (37–69 %)
   > Fait (2026-11-02) : collisions entre les deux baguettes (2–4 % chacune seule). Écartés par
   > mesure : priorité USB du récepteur, montée radio rapide, plus de retransmissions / file ESB

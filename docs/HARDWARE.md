@@ -108,8 +108,19 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   (`XIAO-nRF52840 v15.step`) : PCB 20,95 × 17,78 mm, prise USB-C dépassant de 1,53 mm,
   blindage RF à 3,0 mm au-dessus du dessous du PCB, prise à 4,2 mm. Le modèle ne contient pas
   l'IMU : 1 mm de jeu est laissé sous la carte (adhésif mousse).
-- Plus tard : logement de la LiPo, orientation des axes de l'IMU dans le repère baguette
-  (à mesurer à la gravité une fois la carte montée).
+- **Axes de l'IMU = axes de la baguette** (mesuré le 2026-11-03, test de gravité sur les deux
+  baguettes montées) : x de l'IMU vers la pointe, z vers la fenêtre des LED, y à gauche quand la
+  pointe s'éloigne. Aucune rotation à appliquer dans le firmware ni les outils.
+
+  | Position (immobile 5 s) | Accéléro G (x, y, z) en g | Accéléro D |
+  |---|---|---|
+  | à plat, LED en haut | −0,010 / +0,005 / +1,021 | −0,006 / +0,055 / +1,029 |
+  | debout, pointe en haut | +0,992 / −0,013 / +0,024 | +0,992 / −0,008 / −0,044 |
+  | à plat, LED à droite | −0,023 / +0,999 / +0,034 | −0,022 / +0,992 / +0,131 |
+
+  Les petits écarts viennent surtout du placement à la main ; à plat sur la table, la carte de
+  D est inclinée de ~3° autour de la baguette dans son logement (adhésif), sans conséquence.
+- Plus tard : logement de la LiPo.
 
 ## Options futures
 - Magnétomètre I²C (LIS3MDL ou MMC5603) pour corriger lentement le lacet.
