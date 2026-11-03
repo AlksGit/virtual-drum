@@ -25,11 +25,35 @@ Longueur 406 mm (7A), Ø 15 mm, talon ovale 22,5 × 14,5 mm autour de la carte. 
 Repère (celui de `docs/PROTOCOL.md`) : X le long de la baguette vers la pointe, Z côté composants
 de la carte (LED, reset).
 
-### Impression
-- Les deux grandes pièces **à plat** (couches dans la longueur : bien plus solide que debout),
-  supports arborescents sous la partie ronde. 4 périmètres, remplissage 20 %. PETG de
-  préférence (résiste mieux aux chocs), PLA possible.
-- `cap` : face extérieure sur le plateau, picots vers le haut.
+### Impression (testé pour Bambu Lab P2S, plateau 256 mm, buse 0,4)
+Les STL sortent déjà dans le bon sens : baguette couchée le long de X, dessus de la carte (Z)
+vers le haut. Ne pas les retourner : le méplat du tenon et le plafond du logement de la carte
+sont alors des ponts courts, sans support.
+
+Commencer par les pièces de test (`test_butt` + `cap`, `test_socket` + `test_spigot`, ~15 g en
+tout) pour régler les jeux avant les grandes pièces.
+
+Réglages Bambu Studio (le reste par défaut du filament) :
+| Réglage | Valeur | Pourquoi |
+|---|---|---|
+| Hauteur de couche | 0,16 mm | surface ronde plus lisse, ponts plus propres |
+| Parois (wall loops) | 4 | la solidité d'un tube vient des parois |
+| Couches dessus / dessous | 5 / 5 | |
+| Remplissage | 20 % gyroïde | |
+| Supports | activés, **tree (auto)**, **sur le plateau uniquement** | rien dans le logement ni dans l'emboîture |
+| Angle de seuil des supports | 30° | le dessous rond n'a besoin d'appui que vers le bas |
+| Distance Z supports | 0,2 mm (PLA), 0,24 mm (PETG) | décollage facile |
+| Couture (seam) | alignée, peinte sur le flanc | pas sous la paume ni sur le dessus |
+| Bordure (brim) | non | la pièce repose sur les supports |
+| Compensation de trous XY | 0 au départ | à régler avec les pièces de test |
+
+- Matière : **PETG** (PETG HF) de préférence, résiste mieux aux chocs. Avec un AMS, mettre
+  l'interface des supports en PLA : elle se décolle toute seule du PETG. PLA possible.
+- Plaque texturée PEI.
+- Pièces de test : le tenon doit entrer à la main sans forcer et sans jeu visible. Trop serré →
+  augmenter `JOINT_CLEARANCE` de 0,05 ; trop lâche → la diminuer. Même chose pour la carte
+  (`CLEARANCE`) et les picots de l'embout (`PEG_CLEARANCE`), puis régénérer.
+- `cap` : face extérieure sur le plateau, picots vers le haut, sans support.
 - Masse attendue : ~45 g pour la baguette, carte comprise (une 7A en bois pèse ~50 g).
 
 ### Montage
