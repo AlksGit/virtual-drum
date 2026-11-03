@@ -4,6 +4,12 @@ Note : hardware reçu le 2026-11-02 (2 XIAO nRF52840 Sense + dongle nRF52840 Nor
 récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASUREMENTS.md).
 
 ## TODO
+- [ ] TASK-034 | Baguettes imprimées : impression et montage
+  > Modèle fait (`mech/stick/stick.py`, mergé 2026-11-03). Fait = deux baguettes imprimées et
+  > montées, carte tenue sans jeu, USB-C et reset accessibles ; axes de l'IMU relevés dans le
+  > repère baguette (test de gravité) et notés dans docs/HARDWARE.md. Retours d'impression
+  > (jeux, solidité du collage) reportés dans le script.
+  > Blocked by: —
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)

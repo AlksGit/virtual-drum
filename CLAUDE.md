@@ -25,6 +25,7 @@ firmware/
   common/     # headers partagés : format de paquets, constantes
 tools/        # Python : logger série → CSV, analyse/plots, prototypage des algos
 host/         # app native JUCE (C++) — phase 3+
+mech/         # pièces imprimées (CadQuery) : baguette, voir mech/README.md
 docs/
 ```
 
