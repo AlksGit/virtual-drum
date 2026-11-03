@@ -20,3 +20,7 @@ host/JuceLibraryCode/
 .DS_Store
 .vscode/
 .idea/
+
+# Mechanical: vendor models (unclear licence) and generated parts
+mech/vendor/
+mech/stick/out/

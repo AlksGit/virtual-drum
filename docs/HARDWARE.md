@@ -99,9 +99,17 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   données identifié.
 - Pas de sonde SWD requise. Si besoin de debug pas-à-pas : pads SWD au dos + J-Link / nRF DK.
 
-## Montage mécanique (plus tard)
+## Montage mécanique
 - Carte côté **manche/talon**, pas en bout (équilibre ; le gyro mesure la même rotation partout sur un corps rigide).
-- Baguette imprimée avec logement Ø intérieur ~22 mm, accès USB-C pour la charge.
+- **Baguette imprimée** (2026-11-03) : `mech/stick/stick.py`, mode d'emploi dans `mech/README.md`.
+  Deux pièces collées (talon 213 mm + fût 216 mm, pour tenir sur le plateau) et un embout.
+  Carte dans le talon, X le long de la baguette vers la pointe, composants vers le haut (Z),
+  prise USB-C au bout. Cotes de la carte lues dans le modèle 3D du fabricant
+  (`XIAO-nRF52840 v15.step`) : PCB 20,95 × 17,78 mm, prise USB-C dépassant de 1,53 mm,
+  blindage RF à 3,0 mm au-dessus du dessous du PCB, prise à 4,2 mm. Le modèle ne contient pas
+  l'IMU : 1 mm de jeu est laissé sous la carte (adhésif mousse).
+- Plus tard : logement de la LiPo, orientation des axes de l'IMU dans le repère baguette
+  (à mesurer à la gravité une fois la carte montée).
 
 ## Options futures
 - Magnétomètre I²C (LIS3MDL ou MMC5603) pour corriger lentement le lacet.

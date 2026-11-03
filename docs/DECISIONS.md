@@ -81,3 +81,9 @@ Format : date — décision — pourquoi — alternatives écartées.
   - **pas d'USB sur les baguettes** (console CDC activée par défaut par la carte) : flash 64 → 39 Ko,
     RAM 21 → 12 Ko ; l'USB-C charge toujours, le bootloader UF2 est intact ;
   - compteurs radio et IMU dans STATUS (protocole v4) pour les mesures de TASK-012.
+- **2026-11** — Baguettes de test **imprimées** (pas de vraies baguettes sous la main), décrites en
+  **CadQuery** (script Python dans `mech/`, export STL + STEP). — Modèle paramétrique versionné
+  comme le reste du code, cotes vérifiées automatiquement contre le modèle 3D de la carte.
+  Deux pièces collées par un tenon à méplat (le plateau de l'imprimante est trop petit pour
+  406 mm). Écartés : SolidWorks (lourd pour des pièces simples, fichiers binaires, pas sur le
+  Mac) ; OpenSCAD (pas d'import STEP pour vérifier l'ajustement) ; support sur baguette en bois.
