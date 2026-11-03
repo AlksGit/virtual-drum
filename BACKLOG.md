@@ -4,6 +4,12 @@ Note : hardware reçu le 2026-11-02 (2 XIAO nRF52840 Sense + dongle nRF52840 Nor
 récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASUREMENTS.md).
 
 ## TODO
+- [ ] TASK-035 | Radio : pertes en jeu, même avec une seule baguette
+  > 2026-11-03 : G seule en jeu, 52 à 93 % des paquets reçus (100 % posée), trous jusqu'à 3 s,
+  > RSSI −66 à −73 dBm. Émission passée à +8 dBm des deux côtés (firmware 3, flashé, non mesuré).
+  > Fait = même test (G seule, 2 min : posée, jeu, reposée) comparé à session_20261103_153935 ;
+  > si insuffisant : plus de retransmissions à une baguette, 1 Mbit/s, position du dongle.
+  > Puis : dérive du lacet en jeu (TASK-012), créneaux (TASK-033). Embouts v2 à réimprimer.
 - [ ] TASK-011 | Validation bascule PC → Mac
   > Clone, même NCS, `west build -p` propre, flash, logger OK sur Mac.
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
