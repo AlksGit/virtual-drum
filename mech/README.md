@@ -33,23 +33,27 @@ sont alors des ponts courts, sans support.
 Commencer par les pièces de test (`test_butt` + `cap`, `test_socket` + `test_spigot`, ~15 g en
 tout) pour régler les jeux avant les grandes pièces.
 
-Réglages Bambu Studio (le reste par défaut du filament) :
-| Réglage | Valeur | Pourquoi |
-|---|---|---|
-| Hauteur de couche | 0,16 mm | surface ronde plus lisse, ponts plus propres |
-| Parois (wall loops) | 4 | la solidité d'un tube vient des parois |
-| Couches dessus / dessous | 5 / 5 | |
-| Remplissage | 20 % gyroïde | |
-| Supports | activés, **tree (auto)**, **sur le plateau uniquement** | rien dans le logement ni dans l'emboîture |
-| Angle de seuil des supports | 30° | le dessous rond n'a besoin d'appui que vers le bas |
-| Distance Z supports | 0,2 mm (PLA), 0,24 mm (PETG) | décollage facile |
-| Couture (seam) | alignée, peinte sur le flanc | pas sous la paume ni sur le dessus |
-| Bordure (brim) | non | la pièce repose sur les supports |
-| Compensation de trous XY | 0 au départ | à régler avec les pièces de test |
+Réglages Bambu Studio, noms de l'interface anglaise. Panneau **Process** à gauche, activer
+**Advanced** (interrupteur en haut du panneau) pour voir tous les réglages :
+| Onglet › section | Réglage | Valeur | Pourquoi |
+|---|---|---|---|
+| Quality › Layer height | Layer height | 0.16 mm | surface ronde plus lisse, ponts plus propres |
+| Quality › Seam | Seam position | Aligned | couture sur le flanc (outil *Seam painting* si besoin) |
+| Quality › Precision | X-Y hole compensation | 0 | à régler avec les pièces de test |
+| Strength › Walls | Wall loops | 4 | la solidité d'un tube vient des parois |
+| Strength › Top/bottom shells | Top / Bottom shell layers | 5 / 5 | |
+| Strength › Sparse infill | Sparse infill density / pattern | 20 % / Gyroid | |
+| Support | Enable support | oui | |
+| Support | Type | tree(auto) | |
+| Support | Threshold angle | 30° | seul le dessous rond a besoin d'appui |
+| Support | On build plate only | oui | rien dans le logement ni dans l'emboîture |
+| Support › Advanced | Top Z distance | 0.2 mm (PLA), 0.24 mm (PETG) | décollage facile |
+| Support › Filament for Supports | Support/raft interface | PLA (si AMS et pièce en PETG) | se décolle seul du PETG |
+| Others › Bed adhesion | Brim type | No-brim | la pièce repose sur les supports |
 
-- Matière : **PETG** (PETG HF) de préférence, résiste mieux aux chocs. Avec un AMS, mettre
-  l'interface des supports en PLA : elle se décolle toute seule du PETG. PLA possible.
-- Plaque texturée PEI.
+En haut de l'onglet **Prepare** : **Plate type** › *Textured PEI Plate*.
+
+- Matière : **PETG** (PETG HF) de préférence, résiste mieux aux chocs. PLA possible.
 - Pièces de test : le tenon doit entrer à la main sans forcer et sans jeu visible. Trop serré →
   augmenter `JOINT_CLEARANCE` de 0,05 ; trop lâche → la diminuer. Même chose pour la carte
   (`CLEARANCE`) et les picots de l'embout (`PEG_CLEARANCE`), puis régénérer.
