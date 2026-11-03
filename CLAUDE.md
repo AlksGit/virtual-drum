@@ -38,7 +38,8 @@ docs/
   - Noms vérifiés pour NCS v3.4.1 (`west boards` → `xiao_ble`, variante `sense` dans
     `zephyr/boards/seeed/xiao_ble/board.yml`).
   - `west` se lance via la toolchain : `nrfutil toolchain-manager launch --ncs-version v3.4.1 -- west ...`
-- Flash : les XIAO ont un bootloader **UF2** (double-tap reset → disque USB). Activer
+- Flash des baguettes : `python tools/flash_stick.py --stick left|right --uf2 <zephyr.uf2>` (commande
+  radio, sans bouton). Sinon les XIAO ont un bootloader **UF2** (double-tap reset → disque USB). Activer
   `CONFIG_BUILD_OUTPUT_UF2=y` et copier `build/.../zephyr.uf2`. Pas de sonde SWD nécessaire.
 - Python : `tools/` avec un `requirements.txt` (pyserial, numpy, pandas, matplotlib).
 

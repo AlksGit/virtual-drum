@@ -81,7 +81,12 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   les mesures de TASK-012.
 
 ## Flash / debug
-- UF2 (XIAO) : double-tap sur reset → disque `XIAO-SENSE` → copier `zephyr.uf2`. La carte
+- **Baguettes, sans toucher au bouton** (firmware 3+, depuis le 2026-11-03) : baguette allumée et
+  branchée en USB à ce PC, récepteur branché :
+  `python tools/flash_stick.py --stick left --uf2 build/h0/stick/zephyr/zephyr.uf2` (`right`,
+  `build/h1` pour la D). Le récepteur relaie une commande radio, la baguette redémarre dans
+  son bootloader UF2 et le script copie le fichier. Vérifié sur les deux baguettes.
+- UF2 (XIAO), à la main si le firmware ne répond plus : double-tap sur reset → disque `XIAO-SENSE` → copier `zephyr.uf2`. La carte
   redémarre seule ; le bootloader n'est jamais écrasé. Les baguettes n'ont pas d'USB dans leur
   firmware : une fois flashées, elles n'apparaissent plus sur le PC (normal).
 - Dongle nRF52840 (récepteur) : board `nrf52840dongle/nrf52840` (application à 0x1000, après le

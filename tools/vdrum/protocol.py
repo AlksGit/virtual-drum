@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Union
 
-PROTO_VERSION = 4
+PROTO_VERSION = 5
 
 INT16_MIN = -32768
 INT16_MAX = 32767
@@ -27,6 +27,11 @@ PKT_RAW = 0x01
 PKT_HIT = 0x02
 PKT_ORIENT = 0x03
 PKT_STATUS = 0x04
+PKT_CMD = 0x10  # receiver -> stick, in an ESB ACK payload (never in receiver -> host frames)
+
+CMD_ENTER_BOOTLOADER = 0x01
+CMD_MAGIC = 0x21324655  # "UF2!"
+CMD_IGNORE_AFTER_BOOT_MS = 2000
 
 RAW_MAX_SAMPLES = 8
 QUAT_Q14_ONE = 16384
@@ -37,6 +42,7 @@ USB_SYNC0 = 0xA5
 USB_SYNC1 = 0x5A
 USB_FRAME_HEADER_SIZE = 8  # sync(2) + len(1) + rx_time_us(4) + rssi(1)
 USB_FRAME_OVERHEAD = 9     # header + crc8
+USB_CMD_FRAME_OVERHEAD = 4  # host -> receiver: sync(2) + len(1) + crc8(1)
 
 USB_RECEIVER_VID = 0x2FE3
 USB_RECEIVER_PID = 0x0100
@@ -51,6 +57,7 @@ _HIT = struct.Struct("<BBHIB4hB")
 _ORIENT = struct.Struct("<BBHI4h")
 _STATUS = struct.Struct("<BBHH3hB4H")
 _FRAME_HEADER = struct.Struct("<BBBIb")
+_CMD = struct.Struct("<BBHBI")
 
 RAW_COUNT_OFFSET = 8  # header(4) + t0_us(4)
 
@@ -214,6 +221,13 @@ def encode_packet(packet: Packet) -> bytes:
         return _STATUS.pack(PKT_STATUS, h.stick_id, h.seq, packet.vbat_mv, *packet.gyro_bias, packet.fw_version,
                             packet.tx_retries, packet.tx_failed, packet.tx_queue_full, packet.imu_overruns)
     raise TypeError(f"not a packet: {packet!r}")
+
+
+def encode_command_frame(stick_id: int, cmd: int) -> bytes:
+    """Host -> receiver frame carrying a command for one stick (protocol v5)."""
+    payload = _CMD.pack(PKT_CMD, stick_id, 0, cmd, CMD_MAGIC)
+    body = bytes([len(payload)]) + payload
+    return bytes([USB_SYNC0, USB_SYNC1]) + body + bytes([crc8(body)])
 
 
 def encode_frame(frame: Frame) -> bytes:

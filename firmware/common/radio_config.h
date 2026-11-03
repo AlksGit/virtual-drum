@@ -44,6 +44,15 @@
 #define VDRUM_ESB_FAST_RAMP_UP true
 #endif
 
+/*
+ * Transmit power in dBm, on both ends (data and ACKs). +8 dBm is the nRF52840 maximum
+ * (nRF52840 Product Specification, RADIO: TXPOWER, -40 to +8 dBm); ESB takes dBm
+ * (esb_config.tx_output_power, dbm_to_nrf_radio_txpower in esb.c). The ESB default is 0 dBm.
+ */
+#ifndef VDRUM_ESB_TX_POWER_DBM /* overridable for measurements: -DEXTRA_CFLAGS=... */
+#define VDRUM_ESB_TX_POWER_DBM 8
+#endif
+
 /* CONFIG_ESB_MAX_PAYLOAD_LENGTH must be at least this (checked in each app). */
 #define VDRUM_ESB_MIN_PAYLOAD_CAPACITY RADIO_MAX_PAYLOAD
 

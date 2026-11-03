@@ -30,6 +30,9 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-036 | Flash des baguettes sans double appui sur reset
+  > Merged in: devape (2026-11-03). Commande radio ENTER_BOOTLOADER (protocole v5, payload d'ACK),
+  > `tools/flash_stick.py`. Vérifié sur les deux baguettes. Émission à +8 dBm (TASK-035, à mesurer).
 - [x] TASK-034 | Baguettes imprimées : modèle, impression et montage
   > Merged in: devape (2026-11-03). `mech/stick/stick.py` (CadQuery), deux pièces collées +
   > embout, pièces de test des jeux. Deux baguettes imprimées (Bambu P2S), montées, émettent.

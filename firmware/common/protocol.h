@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 
-#define PROTO_VERSION 4
+#define PROTO_VERSION 5
 
 /* Portable packing: GCC/Clang attribute, MSVC pragma. */
 #if defined(_MSC_VER)
@@ -38,6 +38,7 @@ enum pkt_type {
 	PKT_HIT    = 0x02,
 	PKT_ORIENT = 0x03,
 	PKT_STATUS = 0x04,
+	PKT_CMD    = 0x10, /* receiver -> stick, carried in an ESB ACK payload */
 };
 
 VDRUM_PACKED_BEGIN
@@ -91,6 +92,13 @@ struct VDRUM_PACKED pkt_status {
 	uint16_t imu_overruns;   /* IMU FIFO overruns: samples lost before they were read */
 };
 
+/* Command to a stick. hdr.stick_id is the target, hdr.seq is unused (0). */
+struct VDRUM_PACKED pkt_cmd {
+	struct pkt_header hdr;
+	uint8_t  cmd;   /* enum cmd_id */
+	uint32_t magic; /* CMD_MAGIC: a corrupted or stray payload never triggers a command */
+};
+
 VDRUM_PACKED_END
 
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_header) == 4, "pkt_header must be 4 bytes");
@@ -103,11 +111,22 @@ VDRUM_STATIC_ASSERT(RADIO_MAX_PAYLOAD <= 252, "payload exceeds the ESB maximum")
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_hit) == 18, "pkt_hit must be 18 bytes");
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_orient) == 16, "pkt_orient must be 16 bytes");
 VDRUM_STATIC_ASSERT(sizeof(struct pkt_status) == 21, "pkt_status must be 21 bytes");
+VDRUM_STATIC_ASSERT(sizeof(struct pkt_cmd) == 9, "pkt_cmd must be 9 bytes");
 
 #define HIT_FLAG_GYRO_SAT  (1u << 0)
 #define HIT_FLAG_ACCEL_SAT (1u << 1)
 
 #define QUAT_Q14_ONE 16384
+
+enum cmd_id {
+	CMD_ENTER_BOOTLOADER = 0x01, /* reboot into the UF2 bootloader (replaces the double tap) */
+};
+
+#define CMD_MAGIC 0x21324655 /* "UF2!" in little-endian byte order */
+
+/* A stick ignores commands for this long after boot, so that a command still queued in the
+ * receiver when the stick restarts (after a flash) is consumed without effect. */
+#define CMD_IGNORE_AFTER_BOOT_MS 2000
 
 /*
  * USB CDC framing (receiver -> host)
@@ -119,6 +138,12 @@ VDRUM_STATIC_ASSERT(sizeof(struct pkt_status) == 21, "pkt_status must be 21 byte
 #define USB_SYNC1 0x5A
 #define USB_FRAME_HEADER_SIZE 8  /* sync(2) + len(1) + rx_time_us(4) + rssi(1) */
 #define USB_FRAME_OVERHEAD    9  /* header + crc8 */
+
+/*
+ * USB CDC framing (host -> receiver): commands for a stick, relayed in an ESB ACK payload.
+ * frame: SYNC0 SYNC1 | len u8 | payload[len] (a pkt_cmd) | crc8, crc8 over len and payload.
+ */
+#define USB_CMD_FRAME_OVERHEAD 4 /* sync(2) + len(1) + crc8(1) */
 
 /*
  * CRC-8/SMBUS: poly 0x07, init 0x00, no reflection, no final xor.

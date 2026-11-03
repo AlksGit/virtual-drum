@@ -7,6 +7,7 @@
 #include "usb_link.h"
 
 #include <errno.h>
+#include <string.h>
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/uart.h>
@@ -19,6 +20,10 @@
 /* ~70 full RAW frames: about 0.15 s of both sticks streaming RAW data. */
 #define TX_BUFFER_SIZE 8192
 
+/* Host commands are rare and small (USB_CMD_FRAME_OVERHEAD + a pkt_cmd). */
+#define RX_BUFFER_SIZE 256
+#define CMD_MAX_PAYLOAD 32
+
 /*
  * The board already defines one CDC ACM function (board_cdc_acm_uart, from
  * boards/common/usb/cdc_acm_serial.dtsi included by xiao_ble_common.dtsi): use it, so that the
@@ -27,6 +32,11 @@
 static const struct device *const cdc_dev = DEVICE_DT_GET(DT_NODELABEL(board_cdc_acm_uart));
 
 RING_BUF_DECLARE(tx_ring, TX_BUFFER_SIZE);
+RING_BUF_DECLARE(rx_ring, RX_BUFFER_SIZE);
+static struct k_spinlock rx_lock;
+static usb_link_command_cb command_cb;
+static void rx_work_handler(struct k_work *work);
+static K_WORK_DEFINE(rx_work, rx_work_handler);
 static struct k_spinlock tx_lock;
 static uint32_t dropped_blocks;
 static atomic_t sessions;
@@ -48,10 +58,19 @@ static void uart_isr(const struct device *dev, void *user_data)
 
 	while (uart_irq_update(dev) && uart_irq_is_pending(dev)) {
 		if (uart_irq_rx_ready(dev)) {
-			/* Nothing is expected from the host yet: drain and discard. */
+			/* Host commands: parsed in the system work queue. Bytes that do not fit are
+			 * dropped; the parser resynchronises on the next frame.
+			 */
 			uint8_t scratch[16];
+			const int len = uart_fifo_read(dev, scratch, sizeof(scratch));
 
-			(void)uart_fifo_read(dev, scratch, sizeof(scratch));
+			if (len > 0) {
+				k_spinlock_key_t key = k_spin_lock(&rx_lock);
+
+				(void)ring_buf_put(&rx_ring, scratch, (uint32_t)len);
+				k_spin_unlock(&rx_lock, key);
+				(void)k_work_submit(&rx_work);
+			}
 		}
 
 		if (uart_irq_tx_ready(dev)) {
@@ -69,6 +88,69 @@ static void uart_isr(const struct device *dev, void *user_data)
 
 			(void)ring_buf_get_finish(&tx_ring, sent > 0 ? (uint32_t)sent : 0);
 			k_spin_unlock(&tx_lock, key);
+		}
+	}
+}
+
+/*
+ * Host -> receiver command frames (docs/PROTOCOL.md):
+ *   A5 5A | len | payload[len] | crc8 (over len and payload)
+ * Any error (bad length, bad crc) drops one byte and resynchronises on the next sync bytes.
+ */
+static void rx_work_handler(struct k_work *work)
+{
+	static uint8_t frame[USB_CMD_FRAME_OVERHEAD + CMD_MAX_PAYLOAD];
+	static uint32_t fill;
+
+	ARG_UNUSED(work);
+
+	while (true) {
+		k_spinlock_key_t key = k_spin_lock(&rx_lock);
+
+		fill += ring_buf_get(&rx_ring, &frame[fill], sizeof(frame) - fill);
+		const bool more = !ring_buf_is_empty(&rx_ring);
+
+		k_spin_unlock(&rx_lock, key);
+
+		/* Drop bytes until the buffer starts with the sync sequence. */
+		uint32_t start = 0;
+
+		while (start < fill && !(frame[start] == USB_SYNC0 &&
+					 (start + 1 == fill || frame[start + 1] == USB_SYNC1))) {
+			start++;
+		}
+		if (start > 0) {
+			memmove(frame, &frame[start], fill - start);
+			fill -= start;
+		}
+		if (fill < 3) {
+			if (!more) {
+				return;
+			}
+			continue;
+		}
+
+		const uint8_t len = frame[2];
+		const uint32_t size = USB_CMD_FRAME_OVERHEAD + len;
+
+		if (len == 0 || len > CMD_MAX_PAYLOAD) {
+			memmove(frame, &frame[1], --fill);
+			continue;
+		}
+		if (fill < size) {
+			if (!more) {
+				return;
+			}
+			continue;
+		}
+		if (frame[size - 1] == vdrum_crc8_update(CRC8_INIT, &frame[2], len + 1)) {
+			if (command_cb != NULL) {
+				command_cb(&frame[3], len);
+			}
+			memmove(frame, &frame[size], fill - size);
+			fill -= size;
+		} else {
+			memmove(frame, &frame[1], --fill);
 		}
 	}
 }
@@ -109,13 +191,14 @@ static void usbd_message(struct usbd_context *const ctx, const struct usbd_msg *
 	}
 }
 
-int usb_link_init(void)
+int usb_link_init(usb_link_command_cb on_command)
 {
 	int err;
 
 	if (!device_is_ready(cdc_dev)) {
 		return -ENODEV;
 	}
+	command_cb = on_command;
 
 	err = usbd_add_descriptor(&vdrum_usbd, &vdrum_lang);
 	err = err ? err : usbd_add_descriptor(&vdrum_usbd, &vdrum_manufacturer);
