@@ -56,7 +56,7 @@ En haut de l'onglet **Prepare** : **Plate type** › *Textured PEI Plate*.
 - Matière : **PETG** (PETG HF) de préférence, résiste mieux aux chocs. PLA possible.
 - Pièces de test : le tenon doit entrer à la main sans forcer et sans jeu visible. Trop serré →
   augmenter `JOINT_CLEARANCE` de 0,05 ; trop lâche → la diminuer. Même chose pour la carte
-  (`CLEARANCE`) et les picots de l'embout (`PEG_CLEARANCE`), puis régénérer.
+  (`CLEARANCE`) et les picots de l'embout (`PEG_R`, trous `PEG_HOLE_R`), puis régénérer.
 - `cap` : face extérieure sur le plateau, picots vers le haut, sans support.
 - Masse attendue : ~45 g pour la baguette, carte comprise (une 7A en bois pèse ~50 g).
 
@@ -66,13 +66,15 @@ En haut de l'onglet **Prepare** : **Plate type** › *Textured PEI Plate*.
 2. Coller le tenon (cyanoacrylate ou époxy).
 3. Coller un adhésif mousse double face de **1 mm** sous la carte (côté sans composants), puis la
    glisser dans le talon, prise USB-C vers le bout : elle bute au fond du logement.
-4. Enfoncer l'embout (picots en force). Il bloque la carte dans son logement.
+4. Enfoncer l'embout (picots en force). Il bloque la carte dans son logement. Il n'y a plus à le
+   retirer pour flasher (`tools/flash_stick.py`). Pour sortir la carte : tournevis plat dans
+   l'encoche de l'embout, sur le flanc, et faire levier doucement.
 5. Attacher le câble USB le long de la baguette avec un collier dans la gorge, à 70 mm du bout.
 
 Sur le dessus du talon, près de l'embout : un trou Ø 2,5 mm au-dessus du bouton reset (trombone,
 double appui pour le mode UF2) et, de l'autre côté de la prise, une fenêtre sur les LED.
 
 ### Réglages courants (`stick/stick.py`)
-- `CLEARANCE`, `PEG_CLEARANCE`, `JOINT_CLEARANCE` : jeux, selon l'imprimante.
+- `CLEARANCE`, `PEG_R` / `PEG_HOLE_R`, `JOINT_CLEARANCE` : jeux, selon l'imprimante.
 - `BOTTOM_GAP` : épaisseur de l'adhésif sous la carte.
 - `SPLIT_X` : position de la coupe (les deux pièces restent sous 220 mm).
