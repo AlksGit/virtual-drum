@@ -25,7 +25,7 @@ Longueur 406 mm (7A), Ø 15 mm, talon ovale 22,5 × 14,5 mm autour de la carte. 
 Repère (celui de `docs/PROTOCOL.md`) : X le long de la baguette vers la pointe, Z côté composants
 de la carte (LED, reset).
 
-### Impression (testé pour Bambu Lab P2S, plateau 256 mm, buse 0,4)
+### Impression (réglages pour Bambu Lab P2S, non encore essayés, plateau 256 mm, buse 0,4)
 Les STL sortent déjà dans le bon sens : baguette couchée le long de X, dessus de la carte (Z)
 vers le haut. Ne pas les retourner : le méplat du tenon et le plafond du logement de la carte
 sont alors des ponts courts, sans support.
