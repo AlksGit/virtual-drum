@@ -1,6 +1,7 @@
 """Printed drumstick holding a XIAO nRF52840 Sense, in two parts plus a butt cap.
 
-Run: python mech/stick/stick.py  ->  mech/stick/out/{handle,shaft,cap}.{stl,step}
+Run: python mech/stick/stick.py  ->  mech/stick/out/{handle,shaft,cap}.{stl,step}, plus short
+test_* pieces to tune the fits.
 
 Stick frame (matches docs/PROTOCOL.md): X along the stick, from the butt (X = 0) towards the
 tip; Z is the top side of the board (LEDs, reset button); Y completes a right-handed frame.
@@ -50,10 +51,14 @@ TAPER_X = 260.0
 TIP_R = 4.0  # end of the taper, inside the tip bead
 TIP_LEN, TIP_R_BEAD = 7.0, 5.2  # ellipsoid semi-axes of the tip bead
 GROOVE_X, GROOVE_W, GROOVE_D = 70.0, 3.0, 0.8  # zip tie that holds the USB cable along the stick
+TEST_BUTT_X = 32.0  # test pieces: board pocket, and both sides of the joint
+TEST_JOINT_MARGIN = 8.0
 
 PEG_R, PEG_LEN = 1.2, 5.0
 PEG_YZ = ((3.0, -4.5), (-3.0, -4.5))
-SPIGOT_R, SPIGOT_LEN, SPIGOT_FLAT = 4.5, 25.0, 3.7  # flat keys the orientation, vents the glue
+# The flat keys the orientation and vents the glue. It is on top (+Z): printed flat, the socket
+# roof is then a short bridge instead of a sagging arch.
+SPIGOT_R, SPIGOT_LEN, SPIGOT_FLAT = 4.5, 25.0, 3.7
 
 # Board frame -> stick frame: rotation (x -> -X, y -> Z, z -> Y), PCB USB edge on the cap.
 BOARD_DX = CAP_T + PCB_X[1]
@@ -133,8 +138,8 @@ def board_cavity():
 
 
 def keyed_cylinder(r, x0, flat):
-    """Cylinder ending at the split, with a flat at Y = flat (orientation key, glue vent)."""
-    return cylinder_x(r, x0, SPLIT_X).cut(box(x0 - 1, SPLIT_X + 1, flat, r + 1, -r - 1, r + 1))
+    """Cylinder ending at the split, with a flat at Z = flat (orientation key, glue vent)."""
+    return cylinder_x(r, x0, SPLIT_X).cut(box(x0 - 1, SPLIT_X + 1, -r - 1, r + 1, flat, r + 1))
 
 
 def build():
@@ -165,6 +170,18 @@ def build():
     return {"handle": handle, "shaft": shaft, "cap": cap}
 
 
+def build_tests(parts):
+    """Short pieces to tune the fits before printing the whole stick."""
+    big = 20
+    return {
+        "test_butt": parts["handle"].intersect(box(-1, TEST_BUTT_X, -big, big, -big, big)),
+        "test_socket": parts["handle"].intersect(
+            box(SPLIT_X - SPIGOT_LEN - TEST_JOINT_MARGIN, SPLIT_X, -big, big, -big, big)
+        ),
+        "test_spigot": parts["shaft"].intersect(box(SPLIT_X - SPIGOT_LEN - 1, SPLIT_X + TEST_JOINT_MARGIN, -big, big, -big, big)),
+    }
+
+
 def load_board():
     """Vendor board model moved into the stick frame, or None when the file is absent."""
     if not VENDOR_STEP.exists():
@@ -187,7 +204,7 @@ def check_fit(parts, board):
 def main():
     parts = build()
     OUT.mkdir(exist_ok=True)
-    for name, part in parts.items():
+    for name, part in {**parts, **build_tests(parts)}.items():
         assert part.isValid(), name
         cq.exporters.export(part, str(OUT / f"{name}.stl"), tolerance=0.02, angularTolerance=0.1)
         cq.exporters.export(part, str(OUT / f"{name}.step"))
