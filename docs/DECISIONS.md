@@ -81,6 +81,13 @@ Format : date — décision — pourquoi — alternatives écartées.
   - **pas d'USB sur les baguettes** (console CDC activée par défaut par la carte) : flash 64 → 39 Ko,
     RAM 21 → 12 Ko ; l'USB-C charge toujours, le bootloader UF2 est intact ;
   - compteurs radio et IMU dans STATUS (protocole v4) pour les mesures de TASK-012.
+- **2026-11** — **Jouer d'abord, mesurer ensuite** : détection simple à bord et son dans l'app
+  avant d'avoir fini les mesures de la phase 0. Le flux RAW devient une option de build
+  (`CONFIG_VDRUM_STREAM_RAW`) ; le firmware de jeu n'envoie que HIT et STATUS. — Les
+  difficultés radio venaient du flux RAW (30 % du temps d'antenne à deux baguettes, 2 à 5 % de
+  pertes au repos le 2026-11-04) ; en jeu, un coup de 18 octets passe seul. Les créneaux
+  synchronisés (TASK-033) sont repoussés ; les enregistrements se font une baguette à la fois.
+  Écarté : terminer la phase 0 (créneaux, 10 min de jeu) avant tout son.
 - **2026-11** — Baguettes de test **imprimées** (pas de vraies baguettes sous la main), décrites en
   **CadQuery** (script Python dans `mech/`, export STL + STEP). — Modèle paramétrique versionné
   comme le reste du code, cotes vérifiées automatiquement contre le modèle 3D de la carte.

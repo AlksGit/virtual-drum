@@ -33,7 +33,7 @@ BUILD_ASSERT(VDRUM_ESB_RETRANSMIT_DELAY_US(0) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_
 		     VDRUM_ESB_RETRANSMIT_DELAY_US(1) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US,
 	     "esb_init rejects retransmit delays below 435 us");
 
-#define FIRMWARE_VERSION 3
+#define FIRMWARE_VERSION 4
 
 /*
  * GPREGRET value that makes the Adafruit nRF52 bootloader (the XIAO's UF2 bootloader) start in
@@ -198,6 +198,19 @@ void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32
 			send_raw();
 		}
 	}
+}
+
+void radio_send_hit(uint32_t t_us, uint8_t velocity, const int16_t quat[4], uint8_t flags)
+{
+	struct pkt_hit hit = {
+		.hdr = { .type = PKT_HIT, .stick_id = stick, .seq = take_seq() },
+		.t_us = t_us,
+		.velocity = velocity,
+		.quat = { quat[0], quat[1], quat[2], quat[3] },
+		.flags = flags,
+	};
+
+	send_payload(&hit, sizeof(hit));
 }
 
 void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns)
