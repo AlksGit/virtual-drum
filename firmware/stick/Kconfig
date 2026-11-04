@@ -8,6 +8,14 @@ config VDRUM_STICK_ID
 	  Written in every packet header and selects the ESB pipe. Build the right stick with
 	  -DCONFIG_VDRUM_STICK_ID=1.
 
+config VDRUM_STREAM_RAW
+	bool "Stream raw IMU samples (RAW packets)"
+	default y
+	help
+	  Phase 0 recorder: every IMU sample goes out in RAW packets, about 30 % of the air time with
+	  two sticks. Hits are sent either way. Build with -DCONFIG_VDRUM_STREAM_RAW=n to play: only
+	  HIT and STATUS packets go out, so a hit never waits behind RAW packets.
+
 # ST's LSM6DS3TR-C driver from hal_st (hidden symbols, selected here).
 config VDRUM_STICK_IMU_DRIVER
 	bool
