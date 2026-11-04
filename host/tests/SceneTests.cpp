@@ -1,5 +1,6 @@
 #include "TestFramework.h"
 
+#include "AimCalibration.h"
 #include "KitLayout.h"
 #include "Mat4.h"
 #include "Mesh.h"
@@ -238,4 +239,40 @@ VDRUM_TEST (cymbalTopFacesUp)
     const auto cymbal = makeCymbal (0.23f, 32);
     // The first ring of the top surface is the rim: its normals point up and outwards.
     CHECK (cymbal.vertices.front().nz > 0.5f);
+}
+
+VDRUM_TEST (aimCalibrationRecentersOnTheTargetAndKeepsRelativeAim)
+{
+    AimCalibration aim;
+    const auto frameFor = [] (std::uint8_t stick, const Quat& q) {
+        protocol::OrientPacket orient;
+        orient.header.type = PKT_ORIENT;
+        orient.header.stickId = stick;
+        orient.quat = q.toQ14();
+        protocol::Frame frame;
+        frame.packet = orient;
+        return frame;
+    };
+    const auto corrected = [&] (std::uint8_t stick, const Quat& q) {
+        auto frame = frameFor (stick, q);
+        aim.apply (frame);
+        return Quat::fromQ14 (std::get<protocol::OrientPacket> (frame.packet).quat);
+    };
+
+    // Stick 0 lies 70 degrees to the right, 5 degrees down, rolled: uncorrected until recentered.
+    const auto pose = Quat::fromAzimuthElevation (degToRad (-70.0f), degToRad (-5.0f), degToRad (30.0f));
+    CHECK (approx (radToDeg (corrected (0, pose).azimuthRad()), -70.0f, 0.1f));
+    CHECK (aim.recenter (8.0f, -16.0f) == 1);
+
+    const auto now = corrected (0, pose);
+    CHECK (approx (radToDeg (now.azimuthRad()), 8.0f, 0.1f));
+    CHECK (approx (radToDeg (now.elevationRad()), -16.0f, 0.1f));
+    CHECK (nearestPad (now) == Pad::snare);
+
+    // Turning the stick 36 degrees to the left from there aims at the hi-hat side.
+    const auto left = Quat::fromAzimuthElevation (degToRad (-34.0f), degToRad (-5.0f), degToRad (30.0f));
+    CHECK (approx (radToDeg (corrected (0, left).azimuthRad()), 44.0f, 1.0f));
+
+    // Stick 1 was never seen: left as is.
+    CHECK (approx (radToDeg (corrected (1, pose).azimuthRad()), -70.0f, 0.1f));
 }

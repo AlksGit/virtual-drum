@@ -48,7 +48,8 @@ gauche) et **élévation** (tangage, positif vers le haut). Le kit par défaut e
 `t_us` u32, `quat` i16×4 (w, x, y, z, Q14).
 
 ### 0x04 STATUS (~1 Hz)
-`vbat_mv` u16, `gyro_bias` i16×3, `fw_version` u8, puis des compteurs cumulés depuis le
+`vbat_mv` u16, `gyro_bias` i16×3 (en coups bruts du gyro, 70 mdps/LSB ; 0 avant le firmware 5),
+`fw_version` u8, puis des compteurs cumulés depuis le
 démarrage, qui rebouclent à 2¹⁶ (comparer par différence modulo 2¹⁶) :
 | Champ | Type | Description |
 |---|---|---|
@@ -102,6 +103,8 @@ A5 5A 12 DD CC BB AA D8 02 01 34 12 04 03 02 01 64 00 40 FF FF 00 00 02 01 01 32
 ```
 
 ## Historique
+- v5, précision (2026-11-04, format inchangé) : unité de `gyro_bias` ; HIT et ORIENT envoyés
+  par le firmware 5 (fusion à bord).
 - v5 (2026-11) : commande CMD (0x10) du PC vers une baguette via le récepteur, ENTER_BOOTLOADER
   pour flasher sans double appui sur reset.
 - v4 (2026-10) : compteurs radio et IMU dans STATUS (21 octets), issus de la revue experte.
