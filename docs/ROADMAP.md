@@ -29,6 +29,8 @@ Le firmware est écrit et compilé (CI), mais marqué « non validé sur cible �
 - Fusion (Mahony/Madgwick) + stratégies anti-dérive, évaluées sur les enregistrements.
 
 ## Phase 2 — Portage embarqué
+Démarrée en avance (2026-11-04, cf. DECISIONS.md) : détection simple à bord, HIT, son dans
+l'app ; tous les coups sur la caisse claire en attendant la fusion.
 - Détection + fusion en C dans `stick`, paquets HIT/ORIENT.
 - `receiver` en USB MIDI (note + vélocité) → jouable dans un DAW.
 - Mesure de latence bout en bout (ex. micro sur un pad + sortie audio, à l'oscillo ou par enregistrement).

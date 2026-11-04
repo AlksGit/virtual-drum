@@ -15,6 +15,8 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Blocked by: TASK-007, TASK-008, TASK-009 (chaîne complète à valider)
 
 - [ ] TASK-033 | Radio : créneaux synchronisés entre les deux baguettes (mode RAW)
+  > Repoussée (2026-11-04) : ne sert qu'à enregistrer le flux RAW des deux baguettes à la fois ;
+  > en jeu (HIT seulement) la radio est presque vide. Enregistrer une baguette à la fois.
   > Cause des pertes identifiée (TASK-031) : collisions entre baguettes. Le récepteur mesure la
   > phase d'arrivée de chaque baguette et renvoie à la baguette 1 une correction dans le payload
   > d'ACK ; la baguette 1 cale l'envoi de ses paquets RAW à une demi-période de la baguette 0.
@@ -36,6 +38,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-038 | Première chaîne jouable : détection à bord → HIT → son dans l'app
+  > Portage de tools/detection/detector.py dans la baguette (firmware/stick/src/hit.c), paquets
+  > HIT, firmware de jeu sans RAW (`CONFIG_VDRUM_STREAM_RAW=n`). Pas encore de fusion :
+  > tous les coups visent la caisse claire. Essayé sur les deux baguettes (2026-11-04) :
+  > « ça a l'air pas trop mal ». Seuils à régler sur des coups enregistrés.
+  > Merged in: devape (2026-11-04)
 - [x] TASK-036 | Flash des baguettes sans double appui sur reset
   > Merged in: devape (2026-11-03). Commande radio ENTER_BOOTLOADER (protocole v5, payload d'ACK),
   > `tools/flash_stick.py`. Vérifié sur les deux baguettes. Émission à +8 dBm (TASK-035, à mesurer).

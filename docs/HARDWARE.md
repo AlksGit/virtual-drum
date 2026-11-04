@@ -86,6 +86,12 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   `python tools/flash_stick.py --stick left --uf2 build/h0/stick/zephyr/zephyr.uf2` (`right`,
   `build/h1` pour la D). Le récepteur relaie une commande radio, la baguette redémarre dans
   son bootloader UF2 et le script copie le fichier. Vérifié sur les deux baguettes.
+- **Deux firmwares de baguette** (firmware 4+, 2026-11-04) : *jeu* (HIT + STATUS seulement),
+  `west build -b xiao_ble/nrf52840/sense firmware/stick -d build/p0 -- -DCONFIG_VDRUM_STICK_ID=0
+  -DCONFIG_VDRUM_STREAM_RAW=n` (`build/p1`, id 1 pour la D) ; *enregistreur* (RAW en plus, pour
+  `tools/logger.py`), sans l'option `STREAM_RAW` (`build/h0`, `build/h1`). On passe de l'un à
+  l'autre par `flash_stick.py`. Le chemin du repo contient un espace, que le build sysbuild
+  refuse : lancer `west` depuis un lecteur `subst V: <repo>`.
 - UF2 (XIAO), à la main si le firmware ne répond plus : double-tap sur reset → disque `XIAO-SENSE` → copier `zephyr.uf2`. La carte
   redémarre seule ; le bootloader n'est jamais écrasé. Les baguettes n'ont pas d'USB dans leur
   firmware : une fois flashées, elles n'apparaissent plus sur le PC (normal).

@@ -26,11 +26,13 @@
 #define RELEASE_FRACTION 0.35f  /* detector.py DetectorConfig.release_fraction */
 /* detector.py uses 40 ms. On real air strokes (session_20261103_153541) 40 ms leaves detections
  * 41-70 ms after the previous one (15 of 141): rebounds or fast roll strokes, which that session
- * cannot tell apart (no ground truth). 70 ms is a first guess, to tune on hits on a pad. */
-#define REFRACTORY_US 70000u
+ * cannot tell apart (no ground truth). Hits on a cushion (2026-11-04, 70 ms) still gave weak
+ * doubles ~80 ms after a strong hit: rebounds. 100 ms still allows 10 strokes/s per hand. */
+#define REFRACTORY_US 100000u
 /* Rate mapped to velocity 127. Air strokes peaked at 1360 dps (docs/MEASUREMENTS.md,
- * 2026-11-03); detector.py's 2800 dps would leave the top half of the range unused. */
-#define MAX_SPEED_DPS 1500.0f
+ * 2026-11-03), but hits on a cushion (2026-11-04) peaked at 260-660 dps: at 1500 dps they came
+ * out at velocity 22-56, nearly inaudible through the host's gain curve (v^1.6). */
+#define MAX_SPEED_DPS 800.0f
 
 static hit_cb callback;
 static bool in_stroke;

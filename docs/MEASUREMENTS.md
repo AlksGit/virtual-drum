@@ -157,6 +157,27 @@ mains, puis roulements. Récepteur : dongle sur le PC.
   de dérive en jeu se fait **une baguette à la fois** (seule, une baguette ne perd presque rien,
   TASK-031) en attendant les créneaux synchronisés (TASK-033).
 
+## 2026-11-04 — deux baguettes au repos à +8 dBm, puis premier jeu
+
+Session `session_20261104_143641` (10 min, `analyze_rest.py`), firmware 3 (+8 dBm, RAW).
+Baguettes dans leur talon, à plat, alimentées en USB ; places et Wi-Fi différents du 2026-11-02.
+
+| | G 02/11 (0 dBm) | G 04/11 (+8 dBm) | D 02/11 | D 04/11 |
+|---|---|---|---|---|
+| Paquets perdus | 0,001 % | **3,2 %** | 0,6 % | **1,6 %** |
+| Retransmissions | 37 % | 71 % | 47 % | 58 % |
+| RSSI moyen | −52 dBm | −68 dBm | −65 dBm | −61 dBm |
+| ODR (horloge baguette) | +0,70 % | +0,71 % | −0,05 % | −0,04 % |
+| Dérive du lacet (calib. 10 s) | +5,4° | −6,4° | +7,8° | −3,5° |
+| Bruit gyro z | 1,76 °/s | 1,9 °/s | 0,38 °/s | 0,4 °/s |
+
+- Pertes régulières sur toute la session : collisions entre baguettes. +8 dBm n'y change rien
+  (attendu) ; la hausse par rapport au 02/11 n'est pas attribuable à la puissance (place, Wi-Fi).
+- ODR, dérive au repos et bruit de G (TASK-032) confirment le 02/11.
+- Firmware 4 de jeu (HIT seulement) : 30 paquets en 15 s au repos, 0 perdu, 0 retransmission ;
+  en jeu sur un coussin, 39 coups reçus en 45 s, 0 perdu. Pics de 260 à 660 °/s (contre
+  1360 °/s dans le vide le 03/11) : vélocité calée sur 800 °/s.
+
 ## Reste à mesurer (TASK-012)
 - Dérive du lacet pendant 10 min de jeu.
 - Pertes avec les deux baguettes en mouvement, sur batterie, à distance de jeu.
