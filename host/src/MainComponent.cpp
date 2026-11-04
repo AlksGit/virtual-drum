@@ -75,6 +75,10 @@ MainComponent::MainComponent (const juce::String& commandLine)
     audioSelector.onChange = [this] { audioMenuChanged(); };
     sceneView.addAndMakeVisible (audioSelector);
 
+    recenterButton.setWantsKeyboardFocus (false);
+    recenterButton.onClick = [this] { recenter(); };
+    sceneView.addAndMakeVisible (recenterButton);
+
     setSize (1280, 720);
     setWantsKeyboardFocus (true);
 
@@ -153,6 +157,7 @@ void MainComponent::resized()
     kitSelector.setBounds (sceneView.getWidth() - 12 - 240, 12, 240, 28);
     midiSelector.setBounds (kitSelector.getBounds().translated (0, 34));
     audioSelector.setBounds (midiSelector.getBounds().translated (0, 34));
+    recenterButton.setBounds (audioSelector.getBounds().translated (0, 34));
 }
 
 void MainComponent::rebuildAudioMenu()
@@ -285,6 +290,12 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
         return true;
     }
 
+    if (key.getTextCharacter() == 'c' || key.getTextCharacter() == 'C')
+    {
+        recenter();
+        return true;
+    }
+
     if (key.getTextCharacter() == 'k' || key.getTextCharacter() == 'K')
     {
         selectKit ((currentKit + 1) % static_cast<int> (kitLibrary.kits().size()));
@@ -303,8 +314,17 @@ bool MainComponent::keyPressed (const juce::KeyPress& key)
     return false;
 }
 
-void MainComponent::frameReceived (const protocol::Frame& frame)
+void MainComponent::recenter()
 {
+    const auto& snare = kDrumKit[static_cast<std::size_t> (Pad::snare)];
+    aim.recenter (snare.azimuthDeg, snare.elevationDeg);
+}
+
+void MainComponent::frameReceived (const protocol::Frame& received)
+{
+    auto frame = received;
+    aim.apply (frame);
+
     if (const auto* hit = std::get_if<protocol::HitPacket> (&frame.packet))
     {
         const auto pad = nearestPad (Quat::fromQ14 (hit->quat));

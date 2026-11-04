@@ -56,7 +56,8 @@ cmake -S . -B build -DFETCHCONTENT_SOURCE_DIR_JUCE=/path/to/JUCE
 open "Virtual Drum.app" --args --fake 120   # macOS
 ```
 In the 3D view: drag to orbit, mouse wheel to zoom, double-click to reset the camera.
-Up / Down change the tempo of the simulated drummer, M mutes the sound, K changes the kit. The overlay shows the
+Up / Down change the tempo of the simulated drummer, M mutes the sound, K changes the kit, C recenters the sticks (point both at the snare, then press C
+or the Recenter button: yaw and height are offset per stick). The overlay shows the
 data source, the frame rate, the tempo and the audio device with its buffer size and latency.
 
 Sound: each hit plays the sound of the selected kit, with a gain that follows the velocity.

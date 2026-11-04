@@ -1,5 +1,6 @@
 #pragma once
 
+#include "AimCalibration.h"
 #include "AudioEngine.h"
 #include "DataSource.h"
 #include "FakeDataSource.h"
@@ -24,7 +25,8 @@ namespace vdrum
 // --no-audio disables the sound output.
 // Without options the receiver is used when detected, the simulated drummer otherwise.
 // Keys: Up / Down change the tempo of the simulated drummer, M mutes the sound, K selects the
-// next sound kit (also in the kit list, top right). The MIDI list under it sends every hit to a
+// next sound kit (also in the kit list, top right). C (or the Recenter button) recenters the
+// sticks: point both at the snare, then press it. The MIDI list under it sends every hit to a
 // MIDI output as General MIDI drum notes (for a DAW).
 class MainComponent final : public juce::Component,
                             private DataSource::Listener,
@@ -59,7 +61,12 @@ private:
     void rebuildAudioMenu();
     void audioMenuChanged();
 
+    // Aim: the sticks' current direction becomes the snare.
+    void recenter();
+
     SceneState sceneState;
+    AimCalibration aim;
+    juce::TextButton recenterButton { "Recenter on snare (C)" };
     SceneView sceneView { sceneState };
     KitLibrary kitLibrary;                  // before `audio`, whose kit factory uses it
     AudioEngine audio;

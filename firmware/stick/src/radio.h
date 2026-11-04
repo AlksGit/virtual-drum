@@ -17,9 +17,13 @@ void radio_send_samples(const struct imu_sample *samples, uint32_t count, uint32
 /* Sends a HIT packet (IMU thread context). quat: w, x, y, z in Q14, stick -> world. */
 void radio_send_hit(uint32_t t_us, uint8_t velocity, const int16_t quat[4], uint8_t flags);
 
+/* Sends an ORIENT packet (IMU thread context). */
+void radio_send_orient(uint32_t t_us, const int16_t quat[4]);
+
 /* Sends a STATUS packet (thread context). */
-/* imu_overruns: IMU FIFO overrun count, reported in STATUS (protocol v4). */
-void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns);
+/* imu_overruns: IMU FIFO overrun count, reported in STATUS (protocol v4). gyro_bias in raw
+ * gyro counts. */
+void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns, const int16_t gyro_bias[3]);
 
 struct radio_stats {
 	uint32_t packets_queued;

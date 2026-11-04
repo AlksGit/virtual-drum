@@ -38,6 +38,14 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-039 | Orientation à bord : viser tous les pads (hors grosse caisse)
+  > Fusion Mahony (tools/detection/fusion.py → firmware/stick/src/fusion.c), biais du gyro
+  > recalibré à chaque pause, ORIENT à 104 Hz, quaternion dans HIT, biais dans STATUS
+  > (firmware 5, flashé). App : recentrage par baguette (touche C / bouton), décalages
+  > d'azimut et de hauteur. Vérifié hors ligne (poses : élévation à 2,6° près ; 10 min au repos :
+  > pas de dérive du lacet) et sur cible au repos (ORIENT reçus, biais = mesure du jour).
+  > **Pas encore essayé en jeu** (2026-11-05) : justesse des pads, dérive en jeu.
+  > Merged in: devape (2026-11-04)
 - [x] TASK-038 | Première chaîne jouable : détection à bord → HIT → son dans l'app
   > Portage de tools/detection/detector.py dans la baguette (firmware/stick/src/hit.c), paquets
   > HIT, firmware de jeu sans RAW (`CONFIG_VDRUM_STREAM_RAW=n`). Pas encore de fusion :

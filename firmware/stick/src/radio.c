@@ -33,7 +33,7 @@ BUILD_ASSERT(VDRUM_ESB_RETRANSMIT_DELAY_US(0) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_
 		     VDRUM_ESB_RETRANSMIT_DELAY_US(1) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US,
 	     "esb_init rejects retransmit delays below 435 us");
 
-#define FIRMWARE_VERSION 4
+#define FIRMWARE_VERSION 5
 
 /*
  * GPREGRET value that makes the Adafruit nRF52 bootloader (the XIAO's UF2 bootloader) start in
@@ -213,12 +213,23 @@ void radio_send_hit(uint32_t t_us, uint8_t velocity, const int16_t quat[4], uint
 	send_payload(&hit, sizeof(hit));
 }
 
-void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns)
+void radio_send_orient(uint32_t t_us, const int16_t quat[4])
+{
+	struct pkt_orient orient = {
+		.hdr = { .type = PKT_ORIENT, .stick_id = stick, .seq = take_seq() },
+		.t_us = t_us,
+		.quat = { quat[0], quat[1], quat[2], quat[3] },
+	};
+
+	send_payload(&orient, sizeof(orient));
+}
+
+void radio_send_status(uint16_t vbat_mv, uint32_t imu_overruns, const int16_t gyro_bias[3])
 {
 	struct pkt_status status = {
 		.hdr = { .type = PKT_STATUS, .stick_id = stick, .seq = take_seq() },
 		.vbat_mv = vbat_mv,
-		.gyro_bias = { 0, 0, 0 }, /* bias calibration comes with phase 2 */
+		.gyro_bias = { gyro_bias[0], gyro_bias[1], gyro_bias[2] },
 		.fw_version = FIRMWARE_VERSION,
 		.tx_retries = (uint16_t)atomic_get(&retries),
 		.tx_failed = (uint16_t)atomic_get(&failed),
