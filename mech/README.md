@@ -14,13 +14,13 @@ qu'elle ne touche aucune pièce (volume d'interférence affiché, doit valoir 0)
 
 ## Baguette (`stick/`)
 
-Longueur 406 mm (7A), Ø 15 mm, talon ovale 22,5 × 14,5 mm autour de la carte. Trois pièces :
+Longueur 406 mm (7A), Ø 15 mm, talon ovale 22,5 × 18 mm autour de la carte et de la batterie. Trois pièces :
 
 | Pièce | Taille | Rôle |
 |---|---|---|
 | `handle` | 213 mm | talon : logement de la XIAO puis de la LiPo, prise USB-C au bout, trous reset et LED dessus |
 | `shaft` | 216 mm | fût et olive ; tenon Ø 9 × 25 mm qui entre dans le talon |
-| `cap` | 22 × 15 mm | embout du talon : bloque la carte, laisse passer la prise USB-C |
+| `cap` | 22,5 × 18 mm | embout du talon, tenu par 2 vis : bloque la carte, laisse passer la prise USB-C |
 
 Repère (celui de `docs/PROTOCOL.md`) : X le long de la baguette vers la pointe, Z côté composants
 de la carte (LED, reset).
@@ -56,8 +56,11 @@ En haut de l'onglet **Prepare** : **Plate type** › *Textured PEI Plate*.
 - Matière : **PETG** (PETG HF) de préférence, résiste mieux aux chocs. PLA possible.
 - Pièces de test : le tenon doit entrer à la main sans forcer et sans jeu visible. Trop serré →
   augmenter `JOINT_CLEARANCE` de 0,05 ; trop lâche → la diminuer. Même chose pour la carte
-  (`CLEARANCE`) et les picots de l'embout (`PEG_R`, trous `PEG_HOLE_R`), puis régénérer.
-- `cap` : face extérieure sur le plateau, picots vers le haut, sans support.
+  (`CLEARANCE`), puis régénérer. Avant-trous des vis : `PILOT_D` (2,7 mm) ; plus grand si la vis
+  force trop, plus petit si elle ne mord pas.
+- `cap` : à plat sur le plateau, sans support.
+- Après le passage à la batterie (2026-11-06), seuls `handle` et `cap` changent : le fût
+  (`shaft`) déjà imprimé reste bon, l'emboîture est la même.
 - Masse attendue : ~45 g pour la baguette, carte comprise, batterie en plus (non pesée ; une 7A
   en bois pèse ~50 g).
 
@@ -73,19 +76,22 @@ En haut de l'onglet **Prepare** : **Plate type** › *Textured PEI Plate*.
 4. Coller un adhésif mousse double face de **1 mm** sous la carte (côté sans composants), en deux
    bandes de part et d'autre des soudures de la batterie (la rainure centrale fait 6 mm), puis la
    glisser dans le talon, prise USB-C vers le bout : elle bute au fond du logement.
-5. Enfoncer l'embout (picots en force). Il bloque la carte dans son logement. Il n'y a plus à le
-   retirer pour flasher (`tools/flash_stick.py`). Pour sortir la carte : tournevis plat dans
-   l'encoche de l'embout, sur le flanc, et faire levier doucement.
+5. Visser l'embout : **2 vis autotaraudeuses Ø ~3 mm, 8 à 10 mm de long** (trous Ø 3 mm dans
+   l'embout, avant-trous Ø 2,7 mm sur 10 mm dans le talon, un au-dessus de la carte, un en
+   dessous). Serrer sans forcer : la paroi autour des avant-trous fait 1,2 à 1,6 mm. L'embout ne
+   se monte que dans un sens (découpe de la prise USB-C). Il n'y a plus à le retirer pour flasher
+   (`tools/flash_stick.py`).
 6. Charge : brancher l'USB-C de la baguette, la XIAO charge à 50 mA (`docs/HARDWARE.md`). Pour
-   jouer en USB, attacher le câble avec un collier dans la gorge, à 76 mm du bout.
+   jouer en USB, attacher le câble avec un collier dans la gorge, à 86 mm du bout.
 
 Sur le dessus du talon, près de l'embout : un trou Ø 2,5 mm au-dessus du bouton reset (trombone,
 double appui pour le mode UF2) et, de l'autre côté de la prise, une fenêtre sur les LED.
 
 ### Réglages courants (`stick/stick.py`)
-- `CLEARANCE`, `PEG_R` / `PEG_HOLE_R`, `JOINT_CLEARANCE` : jeux, selon l'imprimante.
+- `CLEARANCE`, `JOINT_CLEARANCE`, `PILOT_D` / `CAP_HOLE_D` : jeux, selon l'imprimante.
+- `BATTERY_PLAY` : jeu de la batterie dans son logement, au total dans chaque dimension (1,5 mm).
 - `BOTTOM_GAP` : épaisseur de l'adhésif sous la carte.
 - `BATTERY_L`, `BATTERY_W`, `BATTERY_T` : cotes de la batterie. Celles de la fiche 80 mAh ;
-  **mesurer les cellules 120 mAh au pied à coulisse avant d'imprimer**. `battery_wall_check()`
+  **cotes jugées bonnes pour les cellules 120 mAh (2026-11-06)**. `battery_wall_check()`
   vérifie qu'il reste 1,5 mm de paroi autour du logement (affiché, doit valoir 0).
 - `SPLIT_X` : position de la coupe (les deux pièces restent sous 220 mm).

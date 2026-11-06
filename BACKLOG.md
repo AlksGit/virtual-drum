@@ -37,9 +37,9 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## IN PROGRESS
 - [ ] TASK-040 | Méca : logement de la LiPo dans le talon
   > LP321323 à plat juste après la carte côté pointe, rainure pour les fils sous la carte,
-  > paroi ≥ 1,5 mm vérifiée par le script (transition ovale → rond allongée de 62 à 70 mm).
-  > Fait = talon réimprimé, batterie et carte montées, baguette jouée sur batterie.
-  > Reste : mesurer les cellules 120 mAh avant impression.
+  > paroi ≥ 1,5 mm vérifiée par le script, 1,5 mm de jeu par dimension. Embout tenu par 2 vis
+  > autotaraudeuses (Ø 3 / avant-trous Ø 2,7) au lieu des picots ; talon 22,5 × 18 mm.
+  > Fait = talon et embout réimprimés, batterie et carte montées, baguette jouée sur batterie.
   > Branch: feat/task-040-battery-pocket
 ## ON HOLD
 
