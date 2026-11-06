@@ -20,6 +20,12 @@
  * back below the threshold: otherwise INT1 would stay high, no new edge would come, and only the
  * 20 ms timeout would read the FIFO (expert review, 2026-10-29).
  *
+ * Sleep: imu_prepare_sleep() reconfigures the sensor from the IMU thread, which owns the bus.
+ * The wake-up event compares the accelerometer slope with WAKE_UP_THS (1 LSB = FS_XL / 64,
+ * WAKE_UP_DUR 1 LSB = 1 / ODR: lsm6ds3tr-c_reg.c); routing it to INT1 also sets
+ * INTERRUPTS_ENABLE (lsm6ds3tr_c_pin_int1_route_set). The nRF52840 GPIO keeps its configuration
+ * through System OFF, so the sensor stays powered (P1.08) and INT1 keeps its sense level.
+ *
  * Timestamps: the INT1 edge marks the arrival of the FIFO_THRESHOLD_SAMPLES-th unread sample. The
  * ISR records that time; sample times follow a continuous count at the nominal period, pulled
  * slowly towards each edge (drift of the IMU clock), and snapped to it after a disruption.
@@ -66,6 +72,14 @@ BUILD_ASSERT(READ_SAMPLES_PER_TRANSFER * WORDS_PER_SAMPLE * sizeof(int16_t) <= U
 	     "FIFO read too long for one transfer");
 BUILD_ASSERT(FIFO_THRESHOLD_SAMPLES >= 1u, "FIFO threshold must be at least one sample");
 
+/* Wake-up on motion: +-2 g full scale, threshold 2 x 2 g / 64 = 62.5 mg of slope, no minimum
+ * duration. A stick picked up from a table moves far more; a desk knock may wake it too, and
+ * it then goes back to sleep after the rest delay.
+ */
+#define WAKEUP_THRESHOLD 2u
+#define WAKEUP_SETTLE_MS 200 /* a few samples at 26 Hz: the slope filter starts from 0 */
+#define WAKEUP_ARM_TIMEOUT_MS 500
+
 /* 1 g at +-16 g full scale: 1000 mg / 0.488 mg/LSB (lsm6ds3tr_c_from_fs16g_to_mg). */
 #define ONE_G_LSB 2049
 
@@ -77,6 +91,10 @@ static K_SEM_DEFINE(fifo_ready, 0, 1);
 static imu_batch_cb batch_callback;
 static struct imu_stats stats;
 static stmdev_ctx_t ctx;
+
+static atomic_t sleep_requested;
+static K_SEM_DEFINE(wakeup_armed, 0, 1);
+static int wakeup_result;
 
 /* Time of the last INT1 edge, and whether a drain has not used it yet (ISR writes, the IMU
  * thread reads both under irq_lock so that they always belong together).
@@ -381,6 +399,37 @@ static void drain_fifo(void)
 	}
 }
 
+/* See the sleep note at the top. */
+static int arm_wakeup(void)
+{
+	int32_t err = 0;
+	lsm6ds3tr_c_int1_route_t route = { 0 };
+
+	if (gpio_pin_interrupt_configure_dt(&int1, GPIO_INT_DISABLE) != 0) {
+		return -EIO;
+	}
+	err |= lsm6ds3tr_c_gy_data_rate_set(&ctx, LSM6DS3TR_C_GY_ODR_OFF);
+	err |= lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_OFF);
+	err |= lsm6ds3tr_c_fifo_mode_set(&ctx, LSM6DS3TR_C_BYPASS_MODE);
+	err |= lsm6ds3tr_c_xl_full_scale_set(&ctx, LSM6DS3TR_C_2g);
+	err |= lsm6ds3tr_c_xl_power_mode_set(&ctx, LSM6DS3TR_C_XL_NORMAL); /* high performance off */
+	err |= lsm6ds3tr_c_int_notification_set(&ctx, LSM6DS3TR_C_INT_PULSED);
+	err |= lsm6ds3tr_c_wkup_dur_set(&ctx, 0);
+	err |= lsm6ds3tr_c_wkup_threshold_set(&ctx, WAKEUP_THRESHOLD);
+	route.int1_wu = PROPERTY_ENABLE; /* and nothing else: the FIFO threshold is off */
+	err |= lsm6ds3tr_c_pin_int1_route_set(&ctx, route);
+	err |= lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_26Hz);
+	if (err != 0) {
+		return -EIO;
+	}
+	k_msleep(WAKEUP_SETTLE_MS);
+
+	/* Level sense: the DETECT signal that wakes the chip from System OFF (Zephyr sample
+	 * samples/boards/nordic/system_off). INT1 still high here wakes it right away: a reboot.
+	 */
+	return gpio_pin_interrupt_configure_dt(&int1, GPIO_INT_LEVEL_ACTIVE);
+}
+
 static void imu_thread(void *a, void *b, void *c)
 {
 	ARG_UNUSED(a);
@@ -390,6 +439,11 @@ static void imu_thread(void *a, void *b, void *c)
 	while (1) {
 		/* The timeout catches a missed edge: the FIFO is drained in any case. */
 		(void)k_sem_take(&fifo_ready, K_MSEC(20));
+		if (atomic_get(&sleep_requested)) {
+			wakeup_result = arm_wakeup();
+			k_sem_give(&wakeup_armed);
+			return;
+		}
 		drain_fifo();
 	}
 }
@@ -433,4 +487,14 @@ int imu_start(imu_batch_cb callback)
 void imu_get_stats(struct imu_stats *out)
 {
 	*out = stats;
+}
+
+int imu_prepare_sleep(void)
+{
+	atomic_set(&sleep_requested, 1);
+	k_sem_give(&fifo_ready);
+	if (k_sem_take(&wakeup_armed, K_MSEC(WAKEUP_ARM_TIMEOUT_MS)) != 0) {
+		return -ETIMEDOUT;
+	}
+	return wakeup_result;
 }

@@ -38,6 +38,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-041 | Baguette : veille automatique, réveil au mouvement
+  > Firmware 6 : après 3 min immobile (test propre à la veille, 20 °/s / 0,15 g), System OFF,
+  > réveil par l'IMU (wake-up sur INT1). Vérifié sur les deux baguettes : endormies ~3 min
+  > après le démarrage, réveillées en les secouant. Enregistreur : jamais de veille.
+  > Plus tard : interrupteur sur BAT+ (demandé par l'utilisateur), consommation en veille.
+  > Merged in: devape (2026-11-06)
 - [x] TASK-039 | Orientation à bord : viser tous les pads (hors grosse caisse)
   > Fusion Mahony (tools/detection/fusion.py → firmware/stick/src/fusion.c), biais du gyro
   > recalibré à chaque pause, ORIENT à 104 Hz, quaternion dans HIT, biais dans STATUS
