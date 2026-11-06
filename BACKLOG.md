@@ -35,6 +35,16 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Reste : dérive du lacet pendant le jeu, une baguette à la fois (pertes radio en jeu à deux).
 
 ## IN PROGRESS
+## ON HOLD
+
+## DONE
+- [x] TASK-040 | Méca : talon avec couvercle, carte et LiPo montables à découvert
+  > Carte puis batterie (LP321323, 1,5 mm de jeu par dimension) l'une après l'autre dans le
+  > talon, ouvertes par-dessous ; couvercle sur toute l'électronique, 2 vis autotaraudeuses
+  > (Ø 3 / avant-trous Ø 2,7), plus d'embout à picots. Talon 22,5 × 14,5 mm, ovale sur 48 mm.
+  > Version précédente (batterie glissée dans un tunnel) jugée non montable par l'utilisateur.
+  > Imprimé et monté par l'utilisateur, baguettes jouées sur batterie (2026-11-06).
+  > Merged in: devape (2026-11-06)
 - [x] TASK-042 | Dérive de la visée en jeu (~30 s)
   > Cause : correction par l'accéléromètre pendant les coups (centripète au talon prise pour
   > une inclinaison). Firmware 7 : correction seulement sous 30 °/s. MEASUREMENTS.md, 2026-11-06 :
