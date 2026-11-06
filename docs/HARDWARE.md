@@ -7,7 +7,12 @@
 | Récepteur ×1 | **nRF52840 Dongle** (Nordic PCA10059) | — | Matériel reçu (2026-11-02). Même puce, USB natif |
 | Récepteur (alternative) | XIAO nRF52840 (non-Sense) | — | Toujours supporté par le firmware (UF2) |
 
-Batteries : LiPo 3,7 V ~100–150 mAh (en stock au bureau, à vérifier : capacité, connecteur, protection).
+Batteries : 2 × LiPo **LP321323** 3,7 V, **120 mAh**, avec circuit de protection (PCM) et fils.
+Fiche du vendeur pour la version 80 mAh (li-polymer-battery.com, même référence) : 3,2 × 13 × 23 mm,
+charge à 4,2 V ± 50 mV et **40 mA au plus**, décharge continue 80 mA au plus. Pas de fiche trouvée
+pour la version 120 mAh (charge max estimée à ~60 mA si elle suit le même 0,5 C, non vérifié) ;
+cotes à mesurer. **Ne pas les charger avec un SparkFun LiPo Charger Basic** (500 mA fixes) :
+charger par la XIAO (BQ25101, 50 mA par défaut, P0.13 laissée en haute impédance).
 
 ## IMU : LSM6DS3TR-C
 - Accéléro : jusqu'à ±16 g. Gyro : jusqu'à **±2000 dps** (risque de saturation sur coups secs).
@@ -131,7 +136,9 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
 
   Les petits écarts viennent surtout du placement à la main ; à plat sur la table, la carte de
   D est inclinée de ~3° autour de la baguette dans son logement (adhésif), sans conséquence.
-- Plus tard : logement de la LiPo.
+- **LiPo** (2026-11-06) : à plat dans le talon, juste après la carte côté pointe, dans la
+  continuité de son logement ; soudée sur les pads BAT+ / BAT− (polarité à vérifier, la carte
+  n'est pas protégée contre l'inversion). Montage : `mech/README.md`.
 
 ## Options futures
 - Magnétomètre I²C (LIS3MDL ou MMC5603) pour corriger lentement le lacet.

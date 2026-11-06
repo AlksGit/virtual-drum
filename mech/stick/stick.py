@@ -1,4 +1,4 @@
-"""Printed drumstick holding a XIAO nRF52840 Sense, in two parts plus a butt cap.
+"""Printed drumstick holding a XIAO nRF52840 Sense and its LiPo, in two parts plus a butt cap.
 
 Run: python mech/stick/stick.py  ->  mech/stick/out/{handle,shaft,cap}.{stl,step}, plus short
 test_* pieces to tune the fits.
@@ -9,6 +9,10 @@ tip; Z is the top side of the board (LEDs, reset button); Y completes a right-ha
 Board dimensions come from the vendor model `mech/vendor/XIAO-nRF52840 v15.step` (not
 committed: unclear licence). When it is present, the script places the board in the handle
 and checks that nothing intersects.
+
+The LiPo sits flat right after the board, towards the tip, in a pocket that continues the
+board pocket: it slides in through the butt before the board. A channel under the board
+leaves room for its wires and the solder joints on the BAT pads.
 """
 
 from pathlib import Path
@@ -31,6 +35,18 @@ RESET_XZ = (10.41, -11.83)  # centre of the reset button (SKTAAAE010), top side
 LEDS_X = (8.99, 11.97)  # user RGB LED and charge LED, top side
 LEDS_Z = (-1.04, 0.23)
 
+# --- Battery: LP321323, 3.2 x 13 x 23 mm (seller datasheet of the 80 mAh version,
+# li-polymer-battery.com; the name encodes the size). The 120 mAh cells in use are not
+# measured yet: check with a caliper and adjust before printing.
+BATTERY_L, BATTERY_W, BATTERY_T = 23.0, 13.0, 3.2
+BATTERY_CLEARANCE = 0.3  # per side
+BATTERY_TAPE = 1.0  # double-sided tape under the cell
+WIRE_GAP = 3.0  # between the board and the cell: the wires leave the cell's protection board
+# Channel in the floor under the whole board, for the wires and the solder joints on the BAT
+# pads (position of the pads not checked on a drawing, hence the full length).
+WIRE_CHANNEL_W, WIRE_CHANNEL_D = 6.0, 1.2
+MIN_WALL = 1.5  # around the battery pocket, checked by battery_wall_check()
+
 # --- Fits (mm) ------------------------------------------------------------------------
 CLEARANCE = 0.15  # per side, board in its pocket
 TOP_GAP = 0.35  # above the RF shield
@@ -44,13 +60,13 @@ SPLIT_X = 215.0  # handle | shaft; both parts stay under 220 mm to print
 CAP_T = 1.6  # butt cap plate; the PCB edge rests against it
 BUTT_A, BUTT_B = 11.25, 7.25  # semi-axes of the oval butt (Y, Z) around the board
 BUTT_END_X = 28.0  # oval section up to here
-ROUND_X = 62.0  # round from here
+ROUND_X = 70.0  # round from here (62 before the battery: its pocket walls fell under MIN_WALL)
 R = 7.5  # 15 mm stick
 TAPER_X = 260.0
 TIP_R = 4.0  # end of the taper, inside the tip bead
 TIP_LEN, TIP_R_BEAD = 7.0, 5.2  # ellipsoid semi-axes of the tip bead
-GROOVE_X, GROOVE_W, GROOVE_D = 70.0, 3.0, 0.8  # zip tie that holds the USB cable along the stick
-TEST_BUTT_X = 32.0  # test pieces: board pocket, and both sides of the joint
+GROOVE_X, GROOVE_W, GROOVE_D = 76.0, 3.0, 0.8  # zip tie that holds the USB cable along the stick
+TEST_BUTT_MARGIN = 3.0  # test pieces: board and battery pockets, and both sides of the joint
 TEST_JOINT_MARGIN = 8.0
 
 # Peg holes in the handle stay at 1.3 mm (handles already printed); the pegs shrank from
@@ -141,6 +157,39 @@ def board_cavity():
     return pcb_and_parts.fuse(usb, reset, leds, *pegs)
 
 
+def battery_pocket_x():
+    """Stick X range of the battery pocket: from the tip-side end of the board pocket."""
+    x0 = to_stick(PCB_X[0] - 2 * CLEARANCE, 0.0, 0.0)[0]
+    return x0, x0 + WIRE_GAP + BATTERY_L + 2 * BATTERY_CLEARANCE
+
+
+def battery_section():
+    """(z0, z1, half width) of the battery pocket, on the floor of the board pocket."""
+    z0 = POCKET_Y0 + BOARD_DZ
+    z1 = max(POCKET_Y1 + BOARD_DZ, z0 + BATTERY_TAPE + BATTERY_T + BATTERY_CLEARANCE)
+    return z0, z1, BATTERY_W / 2 + BATTERY_CLEARANCE
+
+
+def battery_cavity():
+    x0, x1 = battery_pocket_x()
+    z0, z1, half_w = battery_section()
+    pocket = box(x0 - 0.1, x1, -half_w, half_w, z0, z1)
+    board_x0 = to_stick(PCB_X[1] + 1.0, 0.0, 0.0)[0]
+    channel = box(board_x0, x0, -WIRE_CHANNEL_W / 2, WIRE_CHANNEL_W / 2, z0 - WIRE_CHANNEL_D, z0 + 0.1)
+    return pocket.fuse(channel)
+
+
+def battery_wall_check():
+    """Volume of the battery pocket grown by MIN_WALL (round corners) outside the stick: must be 0."""
+    x0, x1 = battery_pocket_x()
+    z0, z1, half_w = battery_section()
+    rect = cq.Wire.makePolygon(
+        [cq.Vector(x0, y, z) for y, z in ((-half_w, z0), (half_w, z0), (half_w, z1), (-half_w, z1))], close=True
+    )
+    grown = cq.Solid.extrudeLinear(rect.offset2D(MIN_WALL, "arc")[0], [], cq.Vector(x1 - x0, 0, 0))
+    return grown.cut(outer_body()).Volume()
+
+
 def peg(y, z):
     tip_x = CAP_T + PEG_LEN - PEG_TIP
     body = cylinder_x(PEG_R, CAP_T - 0.1, tip_x, y, z)
@@ -159,7 +208,7 @@ def keyed_cylinder(r, x0, flat):
 
 
 def build():
-    body = outer_body().cut(board_cavity())
+    body = outer_body().cut(board_cavity()).cut(battery_cavity())
     socket = keyed_cylinder(SPIGOT_R + JOINT_CLEARANCE, SPLIT_X - SPIGOT_LEN - 0.5, SPIGOT_FLAT + JOINT_CLEARANCE)
     handle = body.cut(box(SPLIT_X, LENGTH + 10, -20, 20, -20, 20)).cut(socket)
     shaft = body.cut(box(-10, SPLIT_X, -20, 20, -20, 20)).fuse(
@@ -190,7 +239,9 @@ def build_tests(parts):
     """Short pieces to tune the fits before printing the whole stick."""
     big = 20
     return {
-        "test_butt": parts["handle"].intersect(box(-1, TEST_BUTT_X, -big, big, -big, big)),
+        "test_butt": parts["handle"].intersect(
+            box(-1, battery_pocket_x()[1] + TEST_BUTT_MARGIN, -big, big, -big, big)
+        ),
         "test_socket": parts["handle"].intersect(
             box(SPLIT_X - SPIGOT_LEN - TEST_JOINT_MARGIN, SPLIT_X, -big, big, -big, big)
         ),
@@ -226,6 +277,8 @@ def main():
         cq.exporters.export(part, str(OUT / f"{name}.step"))
         bb = part.BoundingBox()
         print(f"{name}: {bb.xlen:.1f} x {bb.ylen:.1f} x {bb.zlen:.1f} mm, {part.Volume() / 1000:.1f} cm3")
+    print(f"battery pocket X {battery_pocket_x()[0]:.1f}-{battery_pocket_x()[1]:.1f} mm, "
+          f"wall under {MIN_WALL} mm: {battery_wall_check():.3f} mm3")
     board = load_board()
     if board is None:
         print(f"fit check skipped: {VENDOR_STEP} not found")
