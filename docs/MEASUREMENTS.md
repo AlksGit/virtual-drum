@@ -181,3 +181,31 @@ Baguettes dans leur talon, à plat, alimentées en USB ; places et Wi-Fi différ
 ## Reste à mesurer (TASK-012)
 - Dérive du lacet pendant 10 min de jeu.
 - Pertes avec les deux baguettes en mouvement, sur batterie, à distance de jeu.
+
+## 2026-11-06 — dérive en jeu, sur batterie (firmware 6 puis 7)
+
+Protocole : baguettes posées 10 s à un endroit repéré, ~1 min de jeu, reposées au même endroit
+(`tools/logger.py`, HIT + ORIENT + STATUS). Sessions `session_20261106_161259` (firmware 6) et
+`session_20261106_163641` (firmware 7). Pas de saturation du gyro (aucun HIT avec le drapeau).
+**Les deux essais ne sont pas comparables** : coups dans le vide avec le firmware 6, coups sur un
+bloc-notes, toujours au même endroit, avec le firmware 7. L'écart entre les colonnes mêle le
+firmware et la façon de jouer.
+
+| | Firmware 6 G | Firmware 6 D | Firmware 7 G | Firmware 7 D |
+|---|---|---|---|---|
+| Lacet, posée avant → après | 23,0 → 21,2° | 2,7 → 6,2° | 20,8 → 19,1° | 15,8 → 14,9° |
+| Azimut des coups (médianes par 5 s) | 17 à 92° | −31 à 4° | 29 à 35° (46 une fois) | −8 à −2° (−17 une fois) |
+| Élévation des coups | ~+35° | ~+35° | +17 → +8° | +17 → +11° |
+
+- La dérive du gyro lui-même est faible : 1 à 3,5° en une minute de jeu, posée à la main au même
+  endroit (la précision de la pose est du même ordre).
+- Firmware 6 : l'accéléromètre corrigeait aussi pendant les coups (norme proche de 1 g par
+  moments). La carte est au talon, derrière la main : l'accélération centripète, le long de la
+  baguette, passait pour une inclinaison. Élévation fausse (+35° au bas des coups), azimut qui
+  glisse avec : c'est la dérive ressentie en ~30 s.
+- Firmware 7 : correction seulement quand la baguette tourne à moins de 30 °/s (effet montré
+  hors ligne sur les enregistrements bruts du 2026-11-03 : 10 à 20° de moins à l'élévation des
+  coups). Azimut des coups stable à quelques degrés près sur la minute, mais en frappant au
+  même endroit. Élévation lue +8 à +17° sur un bloc-notes posé sur la table, où la pointe est
+  plutôt horizontale ou vers le bas : erreur résiduelle possible, à mesurer (pose immobile dans
+  la position de frappe avant et après le jeu).

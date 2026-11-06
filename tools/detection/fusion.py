@@ -8,9 +8,13 @@ reference and drifts with the residual gyro bias.
 
 - Gyro bias: averaged while the stick is still (gyro and accelerometer quiet for STILL_S), so
   each pause recalibrates it (docs/ARCHITECTURE.md, yaw drift strategy 1).
-- Accelerometer correction only when its norm is close to 1 g: during a stroke it reads
-  10+ g of centripetal acceleration (docs/MEASUREMENTS.md, 2026-11-03), so the fusion runs on
-  the gyro alone through strokes.
+- Accelerometer correction only when its norm is close to 1 g and the stick turns slowly:
+  during a stroke it reads 10+ g of centripetal acceleration (docs/MEASUREMENTS.md,
+  2026-11-03). The norm alone let it in while the stick turned: the board sits at the butt,
+  behind the grip, where the centripetal acceleration points along the stick and passes for a
+  tilt. Played on 2026-11-06, hits then read +35 deg of elevation at the bottom of the
+  strokes; with the rate gate the raw recordings of 2026-11-03 read 10-20 deg lower at the
+  hits. So the fusion runs on the gyro alone through strokes.
 """
 
 from __future__ import annotations
@@ -32,6 +36,7 @@ class FusionConfig:
     kp_start: float = 10.0       # faster pull for the first START_S, from an identity start
     start_s: float = 1.0
     accel_gate_g: float = 0.15   # accelerometer used when | |a| - 1 g | < gate
+    accel_gate_dps: float = 30.0  # ... and the bias-corrected rate is below this
     still_gyro_dps: float = 6.0  # per axis, bias included (bias up to ~2.2 dps measured)
     still_accel_g: float = 0.05
     still_s: float = 0.5
@@ -81,7 +86,8 @@ class Mahony:
                 self.bias_valid = True
 
         w = [math.radians(g - b) for g, b in zip(gyro_dps, self.bias)]
-        if abs(a_norm - 1.0) < c.accel_gate_g:
+        rate_dps = math.degrees(math.sqrt(sum(x * x for x in w)))
+        if abs(a_norm - 1.0) < c.accel_gate_g and rate_dps < c.accel_gate_dps:
             qw, qx, qy, qz = self.q
             # world up (z) seen in the stick frame
             vx = 2 * (qx * qz - qw * qy)

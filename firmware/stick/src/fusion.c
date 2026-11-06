@@ -3,7 +3,9 @@
  * FusionConfig defaults, see that file for the reasoning.
  *
  * - Gyro bias averaged while the stick is still, so each pause recalibrates it.
- * - Accelerometer correction only when its norm is close to 1 g: strokes read 10+ g.
+ * - Accelerometer correction only when its norm is close to 1 g and the stick turns slowly:
+ *   strokes read 10+ g, and at the butt the centripetal acceleration points along the stick,
+ *   where it passes for a tilt (hits read +35 deg of elevation on 2026-11-06).
  */
 
 #include "fusion.h"
@@ -23,6 +25,7 @@
 #define KP_START 10.0f
 #define START_SAMPLES (IMU_ODR_HZ * 1u)
 #define ACCEL_GATE_G 0.15f
+#define ACCEL_GATE_DPS 30.0f
 #define STILL_GYRO_DPS 6.0f
 #define STILL_ACCEL_G 0.05f
 #define STILL_SAMPLES (IMU_ODR_HZ / 2u)
@@ -66,7 +69,10 @@ void fusion_process(const struct imu_sample *s)
 		w[i] = (g[i] - bias_dps[i]) * DEG_TO_RAD;
 	}
 
-	if (fabsf(a_norm - 1.0f) < ACCEL_GATE_G) {
+	const float rate_sq = w[0] * w[0] + w[1] * w[1] + w[2] * w[2];
+	const float gate_rad = ACCEL_GATE_DPS * DEG_TO_RAD;
+
+	if (fabsf(a_norm - 1.0f) < ACCEL_GATE_G && rate_sq < gate_rad * gate_rad) {
 		/* World up seen in the stick frame, crossed with the measured one. */
 		const float vx = 2.0f * (q[1] * q[3] - q[0] * q[2]);
 		const float vy = 2.0f * (q[0] * q[1] + q[2] * q[3]);

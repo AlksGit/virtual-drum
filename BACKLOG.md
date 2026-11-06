@@ -38,6 +38,13 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-042 | Dérive de la visée en jeu (~30 s)
+  > Cause : correction par l'accéléromètre pendant les coups (centripète au talon prise pour
+  > une inclinaison). Firmware 7 : correction seulement sous 30 °/s. MEASUREMENTS.md, 2026-11-06 :
+  > azimut des coups stable à quelques degrés sur une minute (mais coups au même endroit, essai
+  > précédent dans le vide : pas comparable). Reste : élévation lue trop haute (~+10° sur un
+  > bloc-notes), à mesurer par une pose immobile en position de frappe.
+  > Merged in: devape (2026-11-06)
 - [x] TASK-041 | Baguette : veille automatique, réveil au mouvement
   > Firmware 6 : après 3 min immobile (test propre à la veille, 20 °/s / 0,15 g), System OFF,
   > réveil par l'IMU (wake-up sur INT1). Vérifié sur les deux baguettes : endormies ~3 min

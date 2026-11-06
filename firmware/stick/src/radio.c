@@ -33,7 +33,7 @@ BUILD_ASSERT(VDRUM_ESB_RETRANSMIT_DELAY_US(0) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_
 		     VDRUM_ESB_RETRANSMIT_DELAY_US(1) >= VDRUM_ESB_RETRANSMIT_DELAY_MIN_US,
 	     "esb_init rejects retransmit delays below 435 us");
 
-#define FIRMWARE_VERSION 6
+#define FIRMWARE_VERSION 7
 
 /*
  * GPREGRET value that makes the Adafruit nRF52 bootloader (the XIAO's UF2 bootloader) start in
