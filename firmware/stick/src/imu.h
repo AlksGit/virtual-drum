@@ -29,4 +29,10 @@ struct imu_stats {
 
 void imu_get_stats(struct imu_stats *stats);
 
+/* Stops streaming and leaves the sensor watching for motion: accelerometer alone at 26 Hz,
+ * INT1 pulsing on a wake-up event, and INT1 set to wake the nRF52840 from System OFF (level
+ * sense). The IMU thread ends. Returns 0, or a negative errno with streaming stopped anyway.
+ */
+int imu_prepare_sleep(void);
+
 #endif /* VDRUM_IMU_H */

@@ -86,6 +86,18 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   `python tools/flash_stick.py --stick left --uf2 build/h0/stick/zephyr/zephyr.uf2` (`right`,
   `build/h1` pour la D). Le récepteur relaie une commande radio, la baguette redémarre dans
   son bootloader UF2 et le script copie le fichier. Vérifié sur les deux baguettes.
+- **Veille automatique** (firmware 6, 2026-11-06, pas encore essayée sur les baguettes) : sans
+  interrupteur, la baguette reste alimentée dès que la batterie est soudée. Après 3 min immobile
+  (`CONFIG_VDRUM_SLEEP_AFTER_S`, même test d'immobilité que la calibration du biais), elle passe
+  en System OFF : radio et LED coupées, l'IMU seul en veille (accéléro 26 Hz, ±2 g) envoie une
+  impulsion sur INT1 (P0.11) au premier mouvement (pente > 62,5 mg), ce qui réveille le
+  nRF52840 par un reset : démarrage normal (~1 s), visée à recentrer (touche C). Le GPIO garde
+  sa configuration en System OFF : l'IMU reste alimenté par P1.08. Sources : exemple Zephyr
+  `samples/boards/nordic/system_off` (réveil par niveau sur GPIO), pilote ST
+  (`WAKE_UP_THS` 1 LSB = FS / 64), forum Nordic DevZone pour la rétention du GPIO. Désactivée
+  dans le firmware enregistreur (mesures de 10 min au repos). Consommation en veille : à
+  mesurer. Pour flasher une baguette en veille, la bouger d'abord. Un interrupteur sur BAT+
+  est prévu plus tard.
 - **Deux firmwares de baguette** (firmware 4+, 2026-11-04) : *jeu* (HIT + STATUS seulement),
   `west build -b xiao_ble/nrf52840/sense firmware/stick -d build/p0 -- -DCONFIG_VDRUM_STICK_ID=0
   -DCONFIG_VDRUM_STREAM_RAW=n` (`build/p1`, id 1 pour la D) ; *enregistreur* (RAW en plus, pour

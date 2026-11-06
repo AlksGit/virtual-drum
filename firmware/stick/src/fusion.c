@@ -109,6 +109,11 @@ void fusion_get_quat_q14(int16_t quat[4])
 	}
 }
 
+uint32_t fusion_still_samples(void)
+{
+	return still_samples;
+}
+
 void fusion_get_bias(int16_t bias[3])
 {
 	for (int i = 0; i < 3; i++) {

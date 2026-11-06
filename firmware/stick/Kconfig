@@ -16,6 +16,16 @@ config VDRUM_STREAM_RAW
 	  two sticks. Hits are sent either way. Build with -DCONFIG_VDRUM_STREAM_RAW=n to play: only
 	  HIT and STATUS packets go out, so a hit never waits behind RAW packets.
 
+config VDRUM_SLEEP_AFTER_S
+	int "Power off after this long at rest, in seconds (0 = never)"
+	range 0 3600
+	default 0 if VDRUM_STREAM_RAW
+	default 180
+	help
+	  The stick has no power switch: after this long without moving (the rest test of the gyro
+	  bias calibration), it enters System OFF and wakes on motion. Off in the recorder build,
+	  whose rest recordings last 10 minutes.
+
 # ST's LSM6DS3TR-C driver from hal_st (hidden symbols, selected here).
 config VDRUM_STICK_IMU_DRIVER
 	bool

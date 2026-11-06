@@ -7,6 +7,9 @@
  * CONFIG_VDRUM_STREAM_RAW (phase 0 recorder), every sample also goes out in RAW packets of 8.
  * The stick id (0 = left, 1 = right) is CONFIG_VDRUM_STICK_ID.
  *
+ * After CONFIG_VDRUM_SLEEP_AFTER_S at rest, the stick powers off (System OFF, radio and LEDs
+ * off) with the IMU watching for motion; picking it up wakes it through a reset: a normal boot.
+ *
  * LEDs (active low, zephyr/boards/seeed/xiao_ble/xiao_ble_common.dtsi): blue blinks while
  * packets go out (about twice per second), red stays on if the IMU or the radio could not be
  * started, or while samples or packets are being lost.
@@ -14,6 +17,8 @@
 
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/kernel.h>
+#include <zephyr/sys/poweroff.h>
+#include <zephyr/sys/reboot.h>
 
 #include "fusion.h"
 #include "hit.h"
@@ -25,6 +30,8 @@ static const struct gpio_dt_spec led_red = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpio
 
 /* One ORIENT packet every 16 samples: 104 Hz at 1.66 kHz. */
 #define ORIENT_EVERY_SAMPLES 16u
+
+#define SLEEP_AFTER_SAMPLES ((uint32_t)CONFIG_VDRUM_SLEEP_AFTER_S * IMU_ODR_HZ)
 
 static void on_hit(uint32_t t_us, uint8_t velocity, uint8_t flags)
 {
@@ -56,6 +63,17 @@ static void on_samples(const struct imu_sample *samples, uint32_t count, uint32_
 	}
 }
 
+static void power_off(void)
+{
+	(void)gpio_pin_set_dt(&led_blue, 0);
+	(void)gpio_pin_set_dt(&led_red, 0); /* outputs keep their level through System OFF */
+	if (imu_prepare_sleep() != 0) {
+		/* No wake-up source, and streaming has stopped: restart instead. */
+		sys_reboot(SYS_REBOOT_COLD);
+	}
+	sys_poweroff();
+}
+
 int main(void)
 {
 	(void)gpio_pin_configure_dt(&led_blue, GPIO_OUTPUT_INACTIVE);
@@ -73,6 +91,10 @@ int main(void)
 
 	for (uint32_t tick = 0;; tick++) {
 		k_msleep(250);
+
+		if (CONFIG_VDRUM_SLEEP_AFTER_S > 0 && fusion_still_samples() > SLEEP_AFTER_SAMPLES) {
+			power_off();
+		}
 
 		if (tick % 4 == 0) {
 			/* Battery measurement needs the divider ratio (docs/HARDWARE.md): 0 = unknown. */

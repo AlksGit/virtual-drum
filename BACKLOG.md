@@ -35,6 +35,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Reste : dérive du lacet pendant le jeu, une baguette à la fois (pertes radio en jeu à deux).
 
 ## IN PROGRESS
+- [ ] TASK-041 | Baguette : veille automatique, réveil au mouvement
+  > Pas d'interrupteur : après 3 min immobile, System OFF, réveil par l'IMU (wake-up sur INT1).
+  > Firmware 6, compilé (jeu : 180 s ; enregistreur : jamais). Fait = sur les deux baguettes,
+  > les paquets s'arrêtent après 3 min posées et reprennent quand on la prend en main.
+  > Plus tard : interrupteur sur BAT+ (demandé par l'utilisateur), consommation en veille.
+  > Branch: feat/task-041-auto-sleep
 ## ON HOLD
 
 ## DONE
