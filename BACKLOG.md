@@ -35,11 +35,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Reste : dérive du lacet pendant le jeu, une baguette à la fois (pertes radio en jeu à deux).
 
 ## IN PROGRESS
-- [ ] TASK-040 | Méca : logement de la LiPo dans le talon
-  > LP321323 à plat juste après la carte côté pointe, rainure pour les fils sous la carte,
-  > paroi ≥ 1,5 mm vérifiée par le script, 1,5 mm de jeu par dimension. Embout tenu par 2 vis
-  > autotaraudeuses (Ø 3 / avant-trous Ø 2,7) au lieu des picots ; talon 22,5 × 18 mm.
-  > Fait = talon et embout réimprimés, batterie et carte montées, baguette jouée sur batterie.
+- [ ] TASK-040 | Méca : talon avec couvercle, carte et LiPo montables à découvert
+  > Carte puis batterie (LP321323, 1,5 mm de jeu par dimension) l'une après l'autre dans le
+  > talon, ouvertes par-dessous ; couvercle sur toute l'électronique, 2 vis autotaraudeuses
+  > (Ø 3 / avant-trous Ø 2,7), plus d'embout à picots. Talon 22,5 × 14,5 mm, ovale sur 48 mm.
+  > Version précédente (batterie glissée dans un tunnel) jugée non montable par l'utilisateur.
+  > Fait = talon et couvercle imprimés, batterie et carte montées, baguette jouée sur batterie.
   > Branch: feat/task-040-battery-pocket
 ## ON HOLD
 

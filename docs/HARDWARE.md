@@ -118,12 +118,14 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
 ## Montage mécanique
 - Carte côté **manche/talon**, pas en bout (équilibre ; le gyro mesure la même rotation partout sur un corps rigide).
 - **Baguette imprimée** (2026-11-03) : `mech/stick/stick.py`, mode d'emploi dans `mech/README.md`.
-  Deux pièces collées (talon 213 mm + fût 216 mm, pour tenir sur le plateau) et un embout.
+  Deux pièces collées (talon 215 mm + fût 216 mm, pour tenir sur le plateau) et un couvercle
+  vissé sous le talon (2026-11-06, auparavant un embout à picots).
   Carte dans le talon, X le long de la baguette vers la pointe, composants vers le haut (Z),
   prise USB-C au bout. Cotes de la carte lues dans le modèle 3D du fabricant
   (`XIAO-nRF52840 v15.step`) : PCB 20,95 × 17,78 mm, prise USB-C dépassant de 1,53 mm,
   blindage RF à 3,0 mm au-dessus du dessous du PCB, prise à 4,2 mm. Le modèle ne contient pas
-  l'IMU : 1 mm de jeu est laissé sous la carte (adhésif mousse).
+  l'IMU : le couvercle laisse un creux de 2,2 mm sous la carte (hors bords du PCB), et 1 mm de
+  mousse au-dessus du blindage.
 - **Axes de l'IMU = axes de la baguette** (mesuré le 2026-11-03, test de gravité sur les deux
   baguettes montées) : x de l'IMU vers la pointe, z vers la fenêtre des LED, y à gauche quand la
   pointe s'éloigne. Aucune rotation à appliquer dans le firmware ni les outils.
