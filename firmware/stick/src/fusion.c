@@ -2,7 +2,10 @@
  * Mahony fusion, ported from tools/detection/fusion.py (Mahony.process); constants are the
  * FusionConfig defaults, see that file for the reasoning.
  *
- * - Gyro bias averaged while the stick is still, so each pause recalibrates it.
+ * - Gyro bias averaged while the stick is still, so each pause recalibrates it. Still = the
+ *   means of blocks of STILL_BLOCK samples stay close to their mean over STILL_BLOCKS blocks,
+ *   whatever the current bias (a wrong bias locked the left stick at 3 deg/s of drift on
+ *   2026-11-06 with a test against the bias).
  * - Accelerometer correction only when its norm is close to 1 g and the stick turns slowly:
  *   strokes read 10+ g, and at the butt the centripetal acceleration points along the stick,
  *   where it passes for a tilt (hits read +35 deg of elevation on 2026-11-06).
@@ -26,16 +29,71 @@
 #define START_SAMPLES (IMU_ODR_HZ * 1u)
 #define ACCEL_GATE_G 0.15f
 #define ACCEL_GATE_DPS 30.0f
-#define STILL_GYRO_DPS 6.0f
-#define STILL_ACCEL_G 0.05f
-#define STILL_SAMPLES (IMU_ODR_HZ / 2u)
-#define BIAS_ALPHA 0.002f
+#define STILL_BLOCK 16u
+#define STILL_BLOCKS ((IMU_ODR_HZ / 2u + STILL_BLOCK / 2u) / STILL_BLOCK) /* 0.5 s */
+#define STILL_GYRO_DPS 1.5f
+#define STILL_ACCEL_G 0.02f
+#define STILL_NORM_G 0.1f
+#define BIAS_ALPHA 0.005f /* per still block once calibrated */
 
 static float q[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 static float bias_dps[3];
 static bool bias_valid;
-static uint32_t still_samples;
 static uint32_t samples;
+
+/* Rest detection: sums of the current block, then the last STILL_BLOCKS block means
+ * (gx, gy, gz in dps, ax, ay, az in g) in a ring.
+ */
+static float block_sum[6];
+static uint32_t block_count;
+static float window[STILL_BLOCKS][6];
+static uint32_t window_next;
+static uint32_t window_fill;
+
+static void track_rest(const float g[3], const float a[3])
+{
+	for (int i = 0; i < 3; i++) {
+		block_sum[i] += g[i];
+		block_sum[3 + i] += a[i];
+	}
+	if (++block_count < STILL_BLOCK) {
+		return;
+	}
+	for (int i = 0; i < 6; i++) {
+		window[window_next][i] = block_sum[i] / (float)STILL_BLOCK;
+		block_sum[i] = 0.0f;
+	}
+	block_count = 0;
+	window_next = (window_next + 1u) % STILL_BLOCKS;
+	if (window_fill < STILL_BLOCKS) {
+		window_fill++;
+		return;
+	}
+
+	float mean[6] = { 0 };
+
+	for (uint32_t b = 0; b < STILL_BLOCKS; b++) {
+		for (int i = 0; i < 6; i++) {
+			mean[i] += window[b][i] / (float)STILL_BLOCKS;
+		}
+	}
+	for (uint32_t b = 0; b < STILL_BLOCKS; b++) {
+		for (int i = 0; i < 6; i++) {
+			const float tol = i < 3 ? STILL_GYRO_DPS : STILL_ACCEL_G;
+
+			if (fabsf(window[b][i] - mean[i]) >= tol) {
+				return;
+			}
+		}
+	}
+	if (fabsf(sqrtf(mean[3] * mean[3] + mean[4] * mean[4] + mean[5] * mean[5]) - 1.0f) >= STILL_NORM_G) {
+		return;
+	}
+	for (int i = 0; i < 3; i++) {
+		bias_dps[i] = bias_valid ? bias_dps[i] + BIAS_ALPHA * (mean[i] - bias_dps[i]) : mean[i];
+	}
+	bias_valid = true;
+}
 
 void fusion_process(const struct imu_sample *s)
 {
@@ -44,24 +102,7 @@ void fusion_process(const struct imu_sample *s)
 	const float a_norm = sqrtf(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 
 	samples++;
-
-	bool quiet = fabsf(a_norm - 1.0f) < STILL_ACCEL_G;
-
-	for (int i = 0; i < 3; i++) {
-		quiet = quiet && fabsf(g[i] - bias_dps[i]) < STILL_GYRO_DPS;
-	}
-	still_samples = quiet ? still_samples + 1 : 0;
-	if (still_samples > STILL_SAMPLES) {
-		/* First pause: running mean, then a slow average. */
-		const float alpha = bias_valid ? BIAS_ALPHA : 1.0f / (float)(still_samples - STILL_SAMPLES);
-
-		for (int i = 0; i < 3; i++) {
-			bias_dps[i] += alpha * (g[i] - bias_dps[i]);
-		}
-		if (still_samples > 2 * STILL_SAMPLES) {
-			bias_valid = true;
-		}
-	}
+	track_rest(g, a);
 
 	float w[3];
 
