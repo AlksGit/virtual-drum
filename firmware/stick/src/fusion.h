@@ -19,9 +19,4 @@ void fusion_get_quat_q14(int16_t quat[4]);
 /* Gyro bias in raw gyro counts (any thread: a torn read only mixes two close estimates). */
 void fusion_get_bias(int16_t bias[3]);
 
-/* Consecutive samples with the stick at rest, the test that also gates the bias calibration
- * (any thread: one aligned 32-bit word).
- */
-uint32_t fusion_still_samples(void);
-
 #endif /* VDRUM_FUSION_H */
