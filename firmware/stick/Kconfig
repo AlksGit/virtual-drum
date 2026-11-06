@@ -20,10 +20,10 @@ config VDRUM_SLEEP_AFTER_S
 	int "Power off after this long at rest, in seconds (0 = never)"
 	range 0 3600
 	default 0 if VDRUM_STREAM_RAW
-	default 180
+	default 10
 	help
 	  The stick has no power switch: after this long without moving (the rest test of the gyro
-	  bias calibration), it enters System OFF and wakes on motion. Off in the recorder build,
+	  bias calibration), it enters System OFF and wakes on a sharp knock. Off in the recorder build,
 	  whose rest recordings last 10 minutes.
 
 # ST's LSM6DS3TR-C driver from hal_st (hidden symbols, selected here).

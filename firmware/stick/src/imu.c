@@ -72,12 +72,13 @@ BUILD_ASSERT(READ_SAMPLES_PER_TRANSFER * WORDS_PER_SAMPLE * sizeof(int16_t) <= U
 	     "FIFO read too long for one transfer");
 BUILD_ASSERT(FIFO_THRESHOLD_SAMPLES >= 1u, "FIFO threshold must be at least one sample");
 
-/* Wake-up on motion: +-2 g full scale, threshold 2 x 2 g / 64 = 62.5 mg of slope, no minimum
- * duration. A stick picked up from a table moves far more; a desk knock may wake it too, and
- * it then goes back to sleep after the rest delay.
+/* Wake-up on a sharp knock only (user request, 2026-11-06): +-4 g full scale, threshold
+ * 16 x 4 g / 64 = 1 g of slope, no minimum duration, at 104 Hz so that a short knock is not
+ * missed between samples. Picking the stick up or a desk vibration should stay under 1 g.
+ * Not measured: the sleep current at 104 Hz (higher than at 26 Hz).
  */
-#define WAKEUP_THRESHOLD 2u
-#define WAKEUP_SETTLE_MS 200 /* a few samples at 26 Hz: the slope filter starts from 0 */
+#define WAKEUP_THRESHOLD 16u
+#define WAKEUP_SETTLE_MS 100 /* ~10 samples at 104 Hz: the slope filter starts from 0 */
 #define WAKEUP_ARM_TIMEOUT_MS 500
 
 /* 1 g at +-16 g full scale: 1000 mg / 0.488 mg/LSB (lsm6ds3tr_c_from_fs16g_to_mg). */
@@ -411,14 +412,14 @@ static int arm_wakeup(void)
 	err |= lsm6ds3tr_c_gy_data_rate_set(&ctx, LSM6DS3TR_C_GY_ODR_OFF);
 	err |= lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_OFF);
 	err |= lsm6ds3tr_c_fifo_mode_set(&ctx, LSM6DS3TR_C_BYPASS_MODE);
-	err |= lsm6ds3tr_c_xl_full_scale_set(&ctx, LSM6DS3TR_C_2g);
+	err |= lsm6ds3tr_c_xl_full_scale_set(&ctx, LSM6DS3TR_C_4g);
 	err |= lsm6ds3tr_c_xl_power_mode_set(&ctx, LSM6DS3TR_C_XL_NORMAL); /* high performance off */
 	err |= lsm6ds3tr_c_int_notification_set(&ctx, LSM6DS3TR_C_INT_PULSED);
 	err |= lsm6ds3tr_c_wkup_dur_set(&ctx, 0);
 	err |= lsm6ds3tr_c_wkup_threshold_set(&ctx, WAKEUP_THRESHOLD);
 	route.int1_wu = PROPERTY_ENABLE; /* and nothing else: the FIFO threshold is off */
 	err |= lsm6ds3tr_c_pin_int1_route_set(&ctx, route);
-	err |= lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_26Hz);
+	err |= lsm6ds3tr_c_xl_data_rate_set(&ctx, LSM6DS3TR_C_XL_ODR_104Hz);
 	if (err != 0) {
 		return -EIO;
 	}

@@ -35,6 +35,16 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Reste : dérive du lacet pendant le jeu, une baguette à la fois (pertes radio en jeu à deux).
 
 ## IN PROGRESS
+- [ ] TASK-043 | Biais du gyro bloqué faux (G dérive de 3°/s posée) ; veille 10 s, réveil au coup sec
+  > 2026-11-06 : biais de G calibré pendant une rotation lente en main (3,4 °/s en lacet), puis
+  > jamais recalibré (test d'immobilité comparé au biais, raté à cause de la raie à 769 Hz).
+  > Firmware 8 : immobilité jugée sur des moyennes de blocs de 16 échantillons, sans le biais
+  > (prototype Python + tests ; biais retrouvés à 0,1 °/s sur l'enregistrement de repos).
+  > Même firmware, à la demande de l'utilisateur : veille après 10 s, réveil sur un coup sec (1 g).
+  > Compilé, pas flashé (baguettes endormies). Fait = flashé ; posée puis jouée, le biais de G
+  > revient à ~(−0,07 ; −1,4 ; 0,49) °/s et la visée ne tourne plus posée ; réveil au coup sec
+  > seulement.
+  > Branch: fix/task-043-bias-lock
 ## ON HOLD
 
 ## DONE
