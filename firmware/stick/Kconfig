@@ -26,6 +26,16 @@ config VDRUM_SLEEP_AFTER_S
 	  bias calibration), it enters System OFF and wakes on a sharp knock. Off in the recorder build,
 	  whose rest recordings last 10 minutes.
 
+config VDRUM_SLEEP_WITHOUT_HIT_S
+	int "Power off after this long without a hit, in seconds (0 = never)"
+	range 0 3600
+	default 0 if VDRUM_STREAM_RAW
+	default 300
+	help
+	  Safety net for the battery: power off even if the rest test never sees the stick at rest
+	  (on 2026-11-09 a wrong FIFO order made the left stick look always moving, and it never
+	  slept). Woken by a sharp knock, like after a rest.
+
 # ST's LSM6DS3TR-C driver from hal_st (hidden symbols, selected here).
 config VDRUM_STICK_IMU_DRIVER
 	bool
