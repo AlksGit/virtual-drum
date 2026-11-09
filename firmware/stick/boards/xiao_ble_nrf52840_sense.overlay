@@ -1,0 +1,26 @@
+/*
+ * RAM kept through System OFF for the fusion state (gyro bias), as in the Zephyr sample
+ * samples/boards/nordic/system_off (boards/nrf52840dk_nrf52840.overlay, NCS v3.4.1). Zephyr's
+ * nRF poweroff turns retention off for all RAM except the zephyr,retained-ram regions
+ * (soc/nordic/common/poweroff.c). The region sits away from the top of RAM, where the UF2
+ * bootloader that runs first after the wake-up reset keeps its stack; its content is checked
+ * by a CRC anyway (fusion.c).
+ */
+/ {
+	sram@20038000 {
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x20038000 DT_SIZE_K(4)>;
+		zephyr,memory-region = "RetainedMem";
+		status = "okay";
+
+		fusion_retained: retainedmem {
+			compatible = "zephyr,retained-ram";
+			status = "okay";
+		};
+	};
+};
+
+&sram0 {
+	/* Shrunk below the retained region (the stick firmware uses about 12 KB of RAM). */
+	reg = <0x20000000 DT_SIZE_K(224)>;
+};
