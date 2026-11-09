@@ -38,6 +38,12 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-044 | Baguette G qui tourne posée, biais à 0, jamais en veille
+  > Cause : ordre accéléro / gyro de la FIFO voté sur les 64 premiers échantillons, quel que
+  > soit le mouvement ; G, flashée en étant secouée, a pris son accéléro pour son gyro.
+  > Firmware 9 : ordre de ST par défaut (gyro d'abord), vote seulement sur des échantillons
+  > proches du repos. Vérifié 2026-11-09 sur G : biais juste, veille 10 s après le démarrage.
+  > Merged in: devape (2026-11-09)
 - [x] TASK-043 | Biais du gyro bloqué faux (G dérive de 3°/s posée) ; veille 10 s, réveil au coup sec
   > Cause : biais de G calibré pendant une rotation lente en main (3,4 °/s en lacet), jamais
   > recalibré (test d'immobilité comparé au biais, raté à cause de la raie à 769 Hz).
