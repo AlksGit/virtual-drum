@@ -23,8 +23,8 @@ struct imu_stats {
 	uint32_t batches;
 	uint32_t fifo_overruns; /* FIFO filled up before it was read: samples were lost */
 	uint32_t bus_errors;
-	uint8_t accel_first;    /* order detected in the FIFO: 1 = accel then gyro, 0 = gyro then accel */
-	uint8_t order_known;
+	uint8_t accel_first;    /* FIFO order: 1 = accel then gyro, 0 = gyro then accel (ST's, the default) */
+	uint8_t order_known;    /* the order was checked on samples near rest */
 };
 
 void imu_get_stats(struct imu_stats *stats);

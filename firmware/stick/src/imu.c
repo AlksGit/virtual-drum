@@ -7,9 +7,12 @@
  * "lsm6ds3tr-c-en" fixed regulator, which is on at boot (CONFIG_REGULATOR).
  *
  * FIFO: gyroscope and accelerometer batched at the same rate, so each sample is a pattern of
- * 6 words (two data sets of X, Y, Z). The order of the two data sets is detected at start-up
- * (the accelerometer reads ~1 g, i.e. ~2049 LSB at +-16 g) rather than assumed; to be
- * confirmed on hardware (see docs/HARDWARE.md).
+ * 6 words (two data sets of X, Y, Z). Samples start in ST's order, gyroscope as data set 1 and
+ * accelerometer as data set 2 (LSM6DS3 datasheet, FIFO section: not checked in the LSM6DS3TR-C
+ * one). The order is checked on samples taken near rest only (one triplet within 20 % of 1 g,
+ * the other under 30 dps): firmware 8 and earlier voted on the first 64 samples whatever the
+ * motion, and the left stick, flashed while being shaken on 2026-11-09, took its
+ * accelerometer for its gyroscope (spinning while lying, never calibrated, never asleep).
  *
  * TO VERIFY ON HARDWARE: multi-byte reads of FIFO_DATA_OUT rely on the output address rolling
  * back from FIFO_DATA_OUT_H to FIFO_DATA_OUT_L, as in ST's FIFO examples (compare one burst read
@@ -51,7 +54,8 @@
 #define WORDS_PER_SAMPLE 6u
 #define FIFO_THRESHOLD_SAMPLES RAW_MAX_SAMPLES /* one RAW packet per interrupt */
 #define READ_SAMPLES_PER_TRANSFER 8u          /* 96 bytes per I2C read */
-#define ORDER_DETECTION_SAMPLES 64u
+#define ORDER_DETECTION_SAMPLES 64u /* samples near rest */
+#define REST_GYRO_LSB 429             /* 30 dps at 70 mdps/LSB */
 #define MAX_DRAIN_ROUNDS 8u                   /* bounded: the FIFO refills while it is read */
 #define MAX_WRITE_LEN 8u                      /* longest register write made here: 1 byte */
 
@@ -113,10 +117,9 @@ static uint32_t last_read_end_us;
 static uint32_t head_time_us;
 static bool timing_known;
 
-/* Order detection: sum of |first triplet| - 1 g and |second triplet| - 1 g over the first samples. */
-static int64_t first_error_sum;
-static int64_t second_error_sum;
-static uint32_t detection_count;
+/* Order check: samples near rest where the accelerometer is the first, or the second, triplet. */
+static uint32_t first_is_accel;
+static uint32_t second_is_accel;
 
 static int32_t bus_write(void *handle, uint8_t reg, const uint8_t *data, uint16_t len)
 {
@@ -157,26 +160,32 @@ static void int1_isr(const struct device *port, struct gpio_callback *cb, uint32
 	k_sem_give(&fifo_ready);
 }
 
-static int32_t magnitude_error(const int16_t *triplet)
+static int64_t norm_sq(const int16_t *triplet)
 {
-	/* Integer |v| - 1 g, without square roots: compare squared norms scaled down. */
 	const int64_t x = triplet[0], y = triplet[1], z = triplet[2];
-	const int64_t norm_sq = x * x + y * y + z * z;
-	const int64_t target_sq = (int64_t)ONE_G_LSB * ONE_G_LSB;
 
-	return (int32_t)(llabs(norm_sq - target_sq) >> 10);
+	return x * x + y * y + z * z;
 }
 
-static void detect_order(const int16_t *words)
+/* Accelerometer at rest (within 20 % of 1 g) next to a gyroscope at rest (under 30 dps). */
+static bool rest_pair(const int16_t *accel, const int16_t *gyro)
+{
+	const int64_t low = (int64_t)ONE_G_LSB * 8 / 10, high = (int64_t)ONE_G_LSB * 12 / 10;
+	const int64_t a = norm_sq(accel);
+
+	return a > low * low && a < high * high && norm_sq(gyro) < (int64_t)REST_GYRO_LSB * REST_GYRO_LSB;
+}
+
+static void check_order(const int16_t *words)
 {
 	if (stats.order_known) {
 		return;
 	}
 
-	first_error_sum += magnitude_error(&words[0]);
-	second_error_sum += magnitude_error(&words[3]);
-	if (++detection_count >= ORDER_DETECTION_SAMPLES) {
-		stats.accel_first = first_error_sum < second_error_sum;
+	first_is_accel += rest_pair(&words[0], &words[3]);
+	second_is_accel += rest_pair(&words[3], &words[0]);
+	if (first_is_accel + second_is_accel >= ORDER_DETECTION_SAMPLES) {
+		stats.accel_first = first_is_accel > second_is_accel;
 		stats.order_known = 1;
 	}
 }
@@ -325,7 +334,7 @@ static int realign(struct fifo_status *status)
 }
 
 /* Reads `available` complete samples and hands them over in batches. */
-static int read_samples(uint32_t available, bool order_known_at_start)
+static int read_samples(uint32_t available)
 {
 	while (available > 0) {
 		static int16_t words[READ_SAMPLES_PER_TRANSFER * WORDS_PER_SAMPLE];
@@ -340,10 +349,12 @@ static int read_samples(uint32_t available, bool order_known_at_start)
 		}
 		last_read_end_us = now_us();
 
+		const uint8_t accel_first_at_start = stats.accel_first;
+
 		for (uint32_t i = 0; i < count; i++) {
 			const int16_t *w = &words[i * WORDS_PER_SAMPLE];
 
-			detect_order(w);
+			check_order(w);
 			const int16_t *accel = stats.accel_first ? &w[0] : &w[3];
 			const int16_t *gyro = stats.accel_first ? &w[3] : &w[0];
 
@@ -355,10 +366,10 @@ static int read_samples(uint32_t available, bool order_known_at_start)
 
 		stats.samples += count;
 		stats.batches++;
-		/* A batch during which the order detection completes would mix both orders: skip it.
+		/* A batch during which the order check flips the order would mix both: skip it.
 		 * Samples read before the first edge have no time base: skipped too.
 		 */
-		if (batch_callback != NULL && order_known_at_start && timing_known) {
+		if (batch_callback != NULL && stats.accel_first == accel_first_at_start && timing_known) {
 			batch_callback(samples, count, head_time_us);
 		}
 
@@ -371,8 +382,6 @@ static int read_samples(uint32_t available, bool order_known_at_start)
 /* Reads until the FIFO is back below the threshold, so that INT1 can rise again. */
 static void drain_fifo(void)
 {
-	const bool order_known_at_start = stats.order_known;
-
 	for (uint32_t round = 0; round < MAX_DRAIN_ROUNDS; round++) {
 		struct fifo_status status;
 
@@ -395,7 +404,7 @@ static void drain_fifo(void)
 		if (round > 0 && available < FIFO_THRESHOLD_SAMPLES) {
 			return; /* below the threshold: INT1 is low, the next edge will come */
 		}
-		if (available == 0 || read_samples(available, order_known_at_start) != 0) {
+		if (available == 0 || read_samples(available) != 0) {
 			return;
 		}
 	}
