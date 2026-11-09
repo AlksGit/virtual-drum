@@ -110,6 +110,14 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   104 Hz, ±4 g, seuil de pente 1,5 g (réglé à l'essai : 1 g réveillait sur un coup assez doux, 2,5 g demandait un coup trop fort). Pour flasher, réveiller d'abord la baguette d'un coup sec,
   puis lancer `flash_stick.py` dans les 10 s. Après chaque réveil, recentrer (touche C). Pour flasher une baguette en veille, la bouger d'abord. Un interrupteur sur BAT+
   est prévu plus tard.
+  Firmware 10 (2026-11-09, vérifié sur les deux baguettes) : le biais du gyro est gardé pendant
+  la veille dans une zone de RAM conservée en System OFF (0x20038000, 4 Ko, overlay
+  `firmware/stick/boards/xiao_ble_nrf52840_sense.overlay`, d'après l'exemple Zephyr
+  `samples/boards/nordic/system_off`), protégée par un CRC : le bootloader UF2, qui tourne à
+  chaque réveil, ne l'écrase pas (premier STATUS après le réveil déjà avec le bon biais). Veille
+  aussi après 5 min sans coup (`CONFIG_VDRUM_SLEEP_WITHOUT_HIT_S`), quel que soit le test de
+  repos. L'app oublie le recentrage d'azimut d'une baguette qui redémarre (le `seq` repart de
+  0) : son cap au réveil compte comme droit devant ; C recentre toujours.
 - **Deux firmwares de baguette** (firmware 4+, 2026-11-04) : *jeu* (HIT + STATUS seulement),
   `west build -b xiao_ble/nrf52840/sense firmware/stick -d build/p0 -- -DCONFIG_VDRUM_STICK_ID=0
   -DCONFIG_VDRUM_STREAM_RAW=n` (`build/p1`, id 1 pour la D) ; *enregistreur* (RAW en plus, pour

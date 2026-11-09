@@ -10,6 +10,12 @@
 
 #include "protocol.h"
 
+/* Before the IMU starts: takes the gyro bias kept through System OFF, if any. */
+void fusion_init(void);
+
+/* Keeps the gyro bias through System OFF. Call with the IMU thread stopped, before powering off. */
+void fusion_store(void);
+
 /* IMU thread context: one call per sample, at the IMU rate. */
 void fusion_process(const struct imu_sample *sample);
 

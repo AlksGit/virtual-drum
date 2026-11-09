@@ -6,6 +6,9 @@
 // stick, assumed to point at a target pad (the snare), and from then on adds the same azimuth
 // and elevation offsets to that stick's tip direction (roll kept), so the angles between pads
 // stay those of the kit (DrumKit.h).
+// A stick restarts after each sleep (System OFF wakes it through a reset) with its yaw back to
+// zero: the heading it has when it wakes reads straight ahead. Its azimuth offset is then
+// dropped (the elevation offset, set by the seat height, is kept) until the next recenter.
 // Thread-safe: frames arrive on the source thread, recenter() comes from the UI.
 
 #include "Packets.h"
@@ -27,6 +30,7 @@ public:
     // Corrects the orientation of a HIT or ORIENT frame in place, after noting the raw one.
     void apply (protocol::Frame& frame)
     {
+        std::visit ([&] (const auto& packet) { trackRestart (packet.header, frame.rxTimeUs); }, frame.packet);
         if (auto* orient = std::get_if<protocol::OrientPacket> (&frame.packet))
             correct (orient->header.stickId, orient->quat);
         else if (auto* hit = std::get_if<protocol::HitPacket> (&frame.packet))
@@ -51,6 +55,35 @@ public:
     }
 
 private:
+    // Restart = seq going backwards, or a silence ended by a seq back near 0 (the seq wraps
+    // forwards at 2^16 while a stick streams; a radio hole keeps it going forwards).
+    static constexpr std::uint32_t kRestartSilenceUs = 500000;
+    static constexpr std::uint16_t kRestartSeq = 300; // ~3 s of packets after a boot
+
+    void trackRestart (const protocol::Header& header, std::uint32_t rxTimeUs)
+    {
+        if (header.stickId >= kStickCount)
+            return;
+        const std::lock_guard<std::mutex> lock (mutex);
+        auto& last = lastPacket[header.stickId];
+        if (last.valid)
+        {
+            const auto forward = static_cast<std::uint16_t> (header.seq - last.seq);
+            const bool backwards = forward > 0x8000u;
+            const bool silent = rxTimeUs - last.rxTimeUs > kRestartSilenceUs;
+            if (backwards || (silent && header.seq < kRestartSeq))
+                offsets[header.stickId].azimuthRad = 0.0f;
+        }
+        last = { true, header.seq, rxTimeUs };
+    }
+
+    struct LastPacket
+    {
+        bool valid = false;
+        std::uint16_t seq = 0;
+        std::uint32_t rxTimeUs = 0;
+    };
+
     struct Offset
     {
         float azimuthRad = 0.0f;
@@ -83,6 +116,7 @@ private:
     std::array<Quat, kStickCount> latest {};
     std::array<bool, kStickCount> seen {};
     std::array<Offset, kStickCount> offsets {}; // zero until recentered
+    std::array<LastPacket, kStickCount> lastPacket {};
 };
 
 } // namespace vdrum

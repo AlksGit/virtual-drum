@@ -38,6 +38,14 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-045 | Robustesse au réveil (revue du code après TASK-044)
+  > Firmware 10 : ordre de la FIFO figé (gyro d'abord, plus de vote qu'on ne pouvait pas
+  > défaire) ; veille après 5 min sans coup quel que soit le test de repos ; biais du gyro gardé
+  > en RAM conservée pendant la veille (vérifié : bon biais dès le premier STATUS au réveil).
+  > App : recentrage d'azimut oublié quand une baguette redémarre (hauteur gardée).
+  > Reste : partie de 3 à 5 min pour juger la dérive de la visée ; rotation lente et régulière
+  > autour de la verticale encore prise pour du repos (rare, non corrigé).
+  > Merged in: devape (2026-11-09)
 - [x] TASK-044 | Baguette G qui tourne posée, biais à 0, jamais en veille
   > Cause : ordre accéléro / gyro de la FIFO voté sur les 64 premiers échantillons, quel que
   > soit le mouvement ; G, flashée en étant secouée, a pris son accéléro pour son gyro.

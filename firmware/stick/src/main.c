@@ -15,6 +15,9 @@
  * within 0.001 g of it (accelerometer reading 1.03 g), session_20261104_143641. Here motion is
  * MOVING_RUN consecutive samples beyond 20 dps from the bias or 0.15 g from 1 g: that session
  * then rests 363 s (one knock) and 600 s, and play sessions never rest more than 21 s.
+ * Whatever the rest test says, the stick also powers off after CONFIG_VDRUM_SLEEP_WITHOUT_HIT_S
+ * without a hit. The gyro bias is kept through System OFF (fusion_store()), so a woken stick
+ * does not start with a zero bias.
  *
  * LEDs (active low, zephyr/boards/seeed/xiao_ble/xiao_ble_common.dtsi): blue blinks while
  * packets go out (about twice per second), red stays on if the IMU or the radio could not be
@@ -52,10 +55,14 @@ static const struct gpio_dt_spec led_red = GPIO_DT_SPEC_GET(DT_ALIAS(led0), gpio
 /* Samples since the stick last moved: IMU thread writes, main thread reads (one word). */
 static volatile uint32_t rest_samples;
 
+/* Uptime of the last hit, or of the boot (ms): IMU thread writes, main thread reads. */
+static volatile uint32_t last_hit_ms;
+
 static void on_hit(uint32_t t_us, uint8_t velocity, uint8_t flags)
 {
 	int16_t quat[4];
 
+	last_hit_ms = k_uptime_get_32();
 	fusion_get_quat_q14(quat);
 	radio_send_hit(t_us, velocity, quat, flags);
 }
@@ -118,6 +125,7 @@ static void power_off(void)
 		/* No wake-up source, and streaming has stopped: restart instead. */
 		sys_reboot(SYS_REBOOT_COLD);
 	}
+	fusion_store(); /* the IMU thread has ended: the bias no longer changes */
 	sys_poweroff();
 }
 
@@ -126,6 +134,7 @@ int main(void)
 	(void)gpio_pin_configure_dt(&led_blue, GPIO_OUTPUT_INACTIVE);
 	(void)gpio_pin_configure_dt(&led_red, GPIO_OUTPUT_INACTIVE);
 
+	fusion_init();
 	hit_init(on_hit);
 	if (radio_start(CONFIG_VDRUM_STICK_ID) != 0 || imu_start(on_samples) != 0) {
 		(void)gpio_pin_set_dt(&led_red, 1);
@@ -140,6 +149,10 @@ int main(void)
 		k_msleep(250);
 
 		if (CONFIG_VDRUM_SLEEP_AFTER_S > 0 && rest_samples > SLEEP_AFTER_SAMPLES) {
+			power_off();
+		}
+		if (CONFIG_VDRUM_SLEEP_WITHOUT_HIT_S > 0 &&
+		    k_uptime_get_32() - last_hit_ms > (uint32_t)CONFIG_VDRUM_SLEEP_WITHOUT_HIT_S * 1000u) {
 			power_off();
 		}
 

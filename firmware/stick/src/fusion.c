@@ -9,12 +9,22 @@
  * - Accelerometer correction only when its norm is close to 1 g and the stick turns slowly:
  *   strokes read 10+ g, and at the butt the centripetal acceleration points along the stick,
  *   where it passes for a tilt (hits read +35 deg of elevation on 2026-11-06).
+ * - The bias is kept through System OFF (retained RAM, boards/xiao_ble_nrf52840_sense.overlay):
+ *   a stick woken by a knock starts with it instead of zero, and refines it at the next rest.
+ *   Without it, the first calibration took one window, which a slow turn can fool (the right
+ *   stick started 2.6 deg/s off on 2026-11-09 and took ~8 s to settle).
  */
 
 #include "fusion.h"
 
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
+
+#include <zephyr/device.h>
+#include <zephyr/drivers/retained_mem.h>
+#include <zephyr/sys/crc.h>
 
 #include "imu.h"
 
@@ -35,6 +45,17 @@
 #define STILL_ACCEL_G 0.02f
 #define STILL_NORM_G 0.1f
 #define BIAS_ALPHA 0.005f /* per still block once calibrated */
+
+#define SAVED_MAGIC 0x31424456u /* "VDB1" */
+
+/* Fusion state kept through System OFF. */
+struct saved_state {
+	uint32_t magic;
+	float bias_dps[3];
+	uint32_t crc; /* crc32_ieee of the fields above */
+};
+
+static const struct device *const retained = DEVICE_DT_GET(DT_NODELABEL(fusion_retained));
 
 static float q[4] = { 1.0f, 0.0f, 0.0f, 0.0f };
 static float bias_dps[3];
@@ -140,6 +161,39 @@ void fusion_process(const struct imu_sample *s)
 	for (int i = 0; i < 4; i++) {
 		q[i] /= n;
 	}
+}
+
+void fusion_init(void)
+{
+	struct saved_state saved;
+
+	if (!device_is_ready(retained) ||
+	    retained_mem_read(retained, 0, (uint8_t *)&saved, sizeof(saved)) != 0) {
+		return;
+	}
+	if (saved.magic != SAVED_MAGIC ||
+	    saved.crc != crc32_ieee((const uint8_t *)&saved, offsetof(struct saved_state, crc))) {
+		return; /* power-up, or overwritten (bootloader): calibrate from scratch */
+	}
+	for (int i = 0; i < 3; i++) {
+		if (!isfinite(saved.bias_dps[i])) {
+			return;
+		}
+	}
+	memcpy(bias_dps, saved.bias_dps, sizeof(bias_dps));
+	bias_valid = true;
+}
+
+void fusion_store(void)
+{
+	struct saved_state saved = { .magic = SAVED_MAGIC };
+
+	if (!bias_valid || !device_is_ready(retained)) {
+		return;
+	}
+	memcpy(saved.bias_dps, bias_dps, sizeof(saved.bias_dps));
+	saved.crc = crc32_ieee((const uint8_t *)&saved, offsetof(struct saved_state, crc));
+	(void)retained_mem_write(retained, 0, (const uint8_t *)&saved, sizeof(saved));
 }
 
 static int16_t to_q14(float v)

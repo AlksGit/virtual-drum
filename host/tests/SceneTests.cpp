@@ -276,3 +276,41 @@ VDRUM_TEST (aimCalibrationRecentersOnTheTargetAndKeepsRelativeAim)
     // Stick 1 was never seen: left as is.
     CHECK (approx (radToDeg (corrected (1, pose).azimuthRad()), -70.0f, 0.1f));
 }
+
+VDRUM_TEST (aimCalibrationDropsTheAzimuthOffsetWhenAStickRestarts)
+{
+    AimCalibration aim;
+    const auto corrected = [&] (std::uint16_t seq, std::uint32_t rxTimeUs, const Quat& q) {
+        protocol::OrientPacket orient;
+        orient.header.type = PKT_ORIENT;
+        orient.header.stickId = 0;
+        orient.header.seq = seq;
+        orient.quat = q.toQ14();
+        protocol::Frame frame;
+        frame.rxTimeUs = rxTimeUs;
+        frame.packet = orient;
+        aim.apply (frame);
+        return Quat::fromQ14 (std::get<protocol::OrientPacket> (frame.packet).quat);
+    };
+
+    const auto pose = Quat::fromAzimuthElevation (degToRad (-70.0f), degToRad (-5.0f), 0.0f);
+    corrected (65000, 1000000, pose);
+    CHECK (aim.recenter (8.0f, -16.0f) == 1);
+
+    // The seq wraps forwards, and a radio hole keeps it going forwards: offsets kept.
+    CHECK (approx (radToDeg (corrected (65535, 1010000, pose).azimuthRad()), 8.0f, 0.1f));
+    CHECK (approx (radToDeg (corrected (3, 1020000, pose).azimuthRad()), 8.0f, 0.1f));
+    CHECK (approx (radToDeg (corrected (900, 3000000, pose).azimuthRad()), 8.0f, 0.1f));
+
+    // Woken after a sleep: the seq starts again from 0. The heading at wake-up reads straight
+    // ahead, and the elevation offset stays.
+    const auto woken = corrected (0, 20000000, Quat::fromAzimuthElevation (0.0f, degToRad (-5.0f), 0.0f));
+    CHECK (approx (radToDeg (woken.azimuthRad()), 0.0f, 0.1f));
+    CHECK (approx (radToDeg (woken.elevationRad()), -16.0f, 0.1f));
+
+    // A restart seen only by the seq going backwards (no silence measured) counts too.
+    corrected (30, 20005000, pose);
+    CHECK (aim.recenter (8.0f, -16.0f) == 1);
+    CHECK (approx (radToDeg (corrected (40, 20010000, pose).azimuthRad()), 8.0f, 0.1f));
+    CHECK (approx (radToDeg (corrected (2, 20020000, pose).azimuthRad()), -70.0f, 0.1f));
+}
