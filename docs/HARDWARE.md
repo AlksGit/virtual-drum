@@ -104,7 +104,11 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   (`WAKE_UP_THS` 1 LSB = FS / 64), forum Nordic DevZone pour la rétention du GPIO. Désactivée
   dans le firmware enregistreur (mesures de 10 min au repos). Essai du 2026-11-06 : les deux
   baguettes cessent d'émettre ~3 min après leur démarrage, posées ; secouées, elles émettent de
-  nouveau (LED bleue). Consommation en veille : à mesurer. Pour flasher une baguette en veille, la bouger d'abord. Un interrupteur sur BAT+
+  nouveau (LED bleue). Consommation en veille : à mesurer.
+  Firmware 8 (2026-11-06, compilé, **pas encore flashé ni essayé**) : veille après **10 s**
+  immobile et réveil seulement sur un **coup sec** (demande de l'utilisateur) : accéléro à
+  104 Hz, ±4 g, seuil de pente 1,5 g (réglé à l'essai : 1 g réveillait sur un coup assez doux, 2,5 g demandait un coup trop fort). Pour flasher, réveiller d'abord la baguette d'un coup sec,
+  puis lancer `flash_stick.py` dans les 10 s. Après chaque réveil, recentrer (touche C). Pour flasher une baguette en veille, la bouger d'abord. Un interrupteur sur BAT+
   est prévu plus tard.
 - **Deux firmwares de baguette** (firmware 4+, 2026-11-04) : *jeu* (HIT + STATUS seulement),
   `west build -b xiao_ble/nrf52840/sense firmware/stick -d build/p0 -- -DCONFIG_VDRUM_STICK_ID=0

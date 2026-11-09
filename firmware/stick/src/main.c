@@ -9,8 +9,9 @@
  *
  * After CONFIG_VDRUM_SLEEP_AFTER_S at rest, the stick powers off (System OFF, radio and LEDs
  * off) with the IMU watching for motion; picking it up wakes it through a reset: a normal boot.
- * The rest test is looser than the fusion's (6 dps and 0.05 g on every sample): lying on a
- * table, the left stick broke that one after 63 s at most (gyro noise) and the right one came
+ * The rest test is its own, looser than the per-sample one the fusion had in firmware 6 (6 dps
+ * and 0.05 g on every sample): lying on a table, the left stick broke that one after 63 s at
+ * most (gyro noise) and the right one came
  * within 0.001 g of it (accelerometer reading 1.03 g), session_20261104_143641. Here motion is
  * MOVING_RUN consecutive samples beyond 20 dps from the bias or 0.15 g from 1 g: that session
  * then rests 363 s (one knock) and 600 s, and play sessions never rest more than 21 s.

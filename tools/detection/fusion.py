@@ -6,8 +6,13 @@ lying flat, LEDs up) to the world frame (x forward, y left, z up). The accelerom
 specific force, +1 g along world z at rest, so gravity pulls pitch and roll back; yaw has no
 reference and drifts with the residual gyro bias.
 
-- Gyro bias: averaged while the stick is still (gyro and accelerometer quiet for STILL_S), so
-  each pause recalibrates it (docs/ARCHITECTURE.md, yaw drift strategy 1).
+- Gyro bias: averaged while the stick is still, so each pause recalibrates it
+  (docs/ARCHITECTURE.md, yaw drift strategy 1). Still = over STILL_S, the gyro and
+  accelerometer means of blocks of STILL_BLOCK samples stay within a tolerance of their window
+  mean. The test does not involve the current bias: the first version compared each sample with
+  it, and on 2026-11-06 the left stick took a slow hand rotation for its bias (3.4 dps of yaw),
+  after which its gyro noise (769 Hz line) failed that comparison and the bias never came back
+  (3 deg/s of drift). The blocks also average that line out.
 - Accelerometer correction only when its norm is close to 1 g and the stick turns slowly:
   during a stroke it reads 10+ g of centripetal acceleration (docs/MEASUREMENTS.md,
   2026-11-03). The norm alone let it in while the stick turned: the board sits at the butt,
@@ -37,10 +42,12 @@ class FusionConfig:
     start_s: float = 1.0
     accel_gate_g: float = 0.15   # accelerometer used when | |a| - 1 g | < gate
     accel_gate_dps: float = 30.0  # ... and the bias-corrected rate is below this
-    still_gyro_dps: float = 6.0  # per axis, bias included (bias up to ~2.2 dps measured)
-    still_accel_g: float = 0.05
+    still_block: int = 16        # samples per block (~9.6 ms)
+    still_gyro_dps: float = 1.5  # block means within this of the window mean, per axis
+    still_accel_g: float = 0.02  # same for the accelerometer, per axis
+    still_norm_g: float = 0.1    # and the accelerometer reads about 1 g
     still_s: float = 0.5
-    bias_alpha: float = 0.002    # bias average while still (~0.3 s time constant)
+    bias_alpha: float = 0.005    # per still block once calibrated (~2 s time constant)
 
 
 def quat_mul(a, b):
@@ -67,8 +74,37 @@ class Mahony:
         self.q = (1.0, 0.0, 0.0, 0.0)
         self.bias = [0.0, 0.0, 0.0]   # deg/s
         self.bias_valid = False
-        self._still_samples = 0
         self._samples = 0
+        self._block_sum = [0.0] * 6
+        self._block_count = 0
+        self._window = []             # last block means (gx, gy, gz, ax, ay, az)
+
+    def _track_rest(self, gyro_dps, accel_g) -> None:
+        c = self.config
+        for i, v in enumerate((*gyro_dps, *accel_g)):
+            self._block_sum[i] += v
+        self._block_count += 1
+        if self._block_count < c.still_block:
+            return
+        block = [v / c.still_block for v in self._block_sum]
+        self._block_sum, self._block_count = [0.0] * 6, 0
+        self._window.append(block)
+        blocks = round(c.still_s * c.odr_hz / c.still_block)
+        if len(self._window) > blocks:
+            self._window.pop(0)
+        if len(self._window) < blocks:
+            return
+        mean = [sum(b[i] for b in self._window) / blocks for i in range(6)]
+        tol = [c.still_gyro_dps] * 3 + [c.still_accel_g] * 3
+        if any(abs(b[i] - mean[i]) >= tol[i] for b in self._window for i in range(6)):
+            return
+        if abs(math.sqrt(sum(m * m for m in mean[3:])) - 1.0) >= c.still_norm_g:
+            return
+        if self.bias_valid:
+            self.bias = [b + c.bias_alpha * (m - b) for b, m in zip(self.bias, mean[:3])]
+        else:
+            self.bias = mean[:3]
+            self.bias_valid = True
 
     def process(self, gyro_dps, accel_g) -> tuple:
         c = self.config
@@ -76,14 +112,7 @@ class Mahony:
         self._samples += 1
 
         a_norm = math.sqrt(sum(a * a for a in accel_g))
-        quiet = (all(abs(g - b) < c.still_gyro_dps for g, b in zip(gyro_dps, self.bias))
-                 and abs(a_norm - 1.0) < c.still_accel_g)
-        self._still_samples = self._still_samples + 1 if quiet else 0
-        if self._still_samples > c.still_s * c.odr_hz:
-            alpha = c.bias_alpha if self.bias_valid else 1.0 / (self._still_samples - c.still_s * c.odr_hz)
-            self.bias = [b + alpha * (g - b) for g, b in zip(gyro_dps, self.bias)]
-            if self._still_samples > 2 * c.still_s * c.odr_hz:
-                self.bias_valid = True
+        self._track_rest(gyro_dps, accel_g)
 
         w = [math.radians(g - b) for g, b in zip(gyro_dps, self.bias)]
         rate_dps = math.degrees(math.sqrt(sum(x * x for x in w)))

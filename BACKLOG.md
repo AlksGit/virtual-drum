@@ -38,6 +38,15 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
 ## ON HOLD
 
 ## DONE
+- [x] TASK-043 | Biais du gyro bloqué faux (G dérive de 3°/s posée) ; veille 10 s, réveil au coup sec
+  > Cause : biais de G calibré pendant une rotation lente en main (3,4 °/s en lacet), jamais
+  > recalibré (test d'immobilité comparé au biais, raté à cause de la raie à 769 Hz).
+  > Firmware 8 : immobilité jugée sur des moyennes de blocs de 16 échantillons, sans le biais.
+  > Vérifié 2026-11-09 : biais de G (−0,07 ; −1,4 ; 0,42) °/s ; D recalée seule après un mauvais
+  > départ. Veille après 10 s, réveil au coup sec : seuil réglé à l'essai à 1,5 g (1 g trop
+  > sensible, 2,5 g trop dur). Reste : partie de plusieurs minutes pour juger la visée,
+  > consommation en veille (accéléro à 104 Hz).
+  > Merged in: devape (2026-11-09)
 - [x] TASK-040 | Méca : talon avec couvercle, carte et LiPo montables à découvert
   > Carte puis batterie (LP321323, 1,5 mm de jeu par dimension) l'une après l'autre dans le
   > talon, ouvertes par-dessous ; couvercle sur toute l'électronique, 2 vis autotaraudeuses
@@ -49,8 +58,8 @@ récepteur). Chaîne complète validée sur cible ; mesures en cours (docs/MEASU
   > Cause : correction par l'accéléromètre pendant les coups (centripète au talon prise pour
   > une inclinaison). Firmware 7 : correction seulement sous 30 °/s. MEASUREMENTS.md, 2026-11-06 :
   > azimut des coups stable à quelques degrés sur une minute (mais coups au même endroit, essai
-  > précédent dans le vide : pas comparable). Reste : élévation lue trop haute (~+10° sur un
-  > bloc-notes), à mesurer par une pose immobile en position de frappe.
+  > précédent dans le vide : pas comparable). Élévation vérifiée le 2026-11-06 par une pose
+  > immobile en position de frappe : celle des coups en diffère de 2 à 3°.
   > Merged in: devape (2026-11-06)
 - [x] TASK-041 | Baguette : veille automatique, réveil au mouvement
   > Firmware 6 : après 3 min immobile (test propre à la veille, 20 °/s / 0,15 g), System OFF,
