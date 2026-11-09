@@ -73,11 +73,11 @@ BUILD_ASSERT(READ_SAMPLES_PER_TRANSFER * WORDS_PER_SAMPLE * sizeof(int16_t) <= U
 BUILD_ASSERT(FIFO_THRESHOLD_SAMPLES >= 1u, "FIFO threshold must be at least one sample");
 
 /* Wake-up on a sharp knock only (user request, 2026-11-06): +-4 g full scale, threshold
- * 16 x 4 g / 64 = 1 g of slope, no minimum duration, at 104 Hz so that a short knock is not
- * missed between samples. Picking the stick up or a desk vibration should stay under 1 g.
+ * 40 x 4 g / 64 = 2.5 g of slope, no minimum duration, at 104 Hz so that a short knock is not
+ * missed between samples. At 1 g (2026-11-09) a rather soft knock woke the sticks.
  * Not measured: the sleep current at 104 Hz (higher than at 26 Hz).
  */
-#define WAKEUP_THRESHOLD 16u
+#define WAKEUP_THRESHOLD 40u
 #define WAKEUP_SETTLE_MS 100 /* ~10 samples at 104 Hz: the slope filter starts from 0 */
 #define WAKEUP_ARM_TIMEOUT_MS 500
 

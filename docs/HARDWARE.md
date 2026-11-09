@@ -102,7 +102,7 @@ Points relevés par la revue experte (TASK-029), non vérifiables sans matériel
   nouveau (LED bleue). Consommation en veille : à mesurer.
   Firmware 8 (2026-11-06, compilé, **pas encore flashé ni essayé**) : veille après **10 s**
   immobile et réveil seulement sur un **coup sec** (demande de l'utilisateur) : accéléro à
-  104 Hz, ±4 g, seuil de pente 1 g. Pour flasher, réveiller d'abord la baguette d'un coup sec,
+  104 Hz, ±4 g, seuil de pente 2,5 g (1 g réveillait sur un coup assez doux). Pour flasher, réveiller d'abord la baguette d'un coup sec,
   puis lancer `flash_stick.py` dans les 10 s. Après chaque réveil, recentrer (touche C). Pour flasher une baguette en veille, la bouger d'abord. Un interrupteur sur BAT+
   est prévu plus tard.
 - **Deux firmwares de baguette** (firmware 4+, 2026-11-04) : *jeu* (HIT + STATUS seulement),
